@@ -1002,14 +1002,26 @@ end
 
 function result = observed_pf(network, settings, i, k, parent, stage)
     observe(settings, [stage '_input'], network, i, k, parent, struct());
-    result = runpf(network, settings.mpopt);
+    try
+        result = runpf(network, settings.mpopt);
+    catch err
+        observe(settings, [stage '_exception'], network, i, k, parent, ...
+            struct('identifier', err.identifier, 'message', err.message, 'success', false));
+        rethrow(err);
+    end
     observe(settings, stage, result, i, k, parent, struct('success', logical(result.success)));
 end
 
 function result = observed_opf(network_disp, options, settings, island, i, k, parent)
     observe(settings, 'before_recovery_opf', island, i, k, parent, ...
         struct('solver', options.opf.ac.solver), network_disp);
-    result = runopf(network_disp, options);
+    try
+        result = runopf(network_disp, options);
+    catch err
+        observe(settings, 'recovery_opf_exception', island, i, k, parent, ...
+            struct('identifier', err.identifier, 'message', err.message, 'success', false));
+        rethrow(err);
+    end
     if ~isfield(settings, 'observer')
         return
     end

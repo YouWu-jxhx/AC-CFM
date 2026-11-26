@@ -15,9 +15,9 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def launch(matlab, output, name):
+def launch(matlab, output, name, expression=None):
     target = str(output).replace("'", "''")
-    expression = (
+    standard = (
         f"fid=fopen(fullfile('{target}','{name}.pid'),'w');"
         "fprintf(fid,'%d',feature('getpid'));fclose(fid);"
         "cfg=accfmlab.config();"
@@ -28,7 +28,7 @@ def launch(matlab, output, name):
     # -wait keeps the launcher alive as the parent of the MATLAB worker.
     with (output / name).open("wb") as log:
         return subprocess.Popen(
-            [matlab, "-wait", "-sd", str(ROOT), "-batch", expression],
+            [matlab, "-wait", "-sd", str(ROOT), "-batch", expression or standard],
             cwd=ROOT,
             stdout=log,
             stderr=subprocess.STDOUT,
@@ -94,10 +94,16 @@ def run(matlab, output):
             time.sleep(0.05)
         checked(not second.exists(), "Second scenario had already committed before interruption.")
         original = hashes(first)
+        started = b"[running 2/3] scenario 2"
+        while started not in (output / "interrupted-matlab.log").read_bytes():
+            checked(interrupted.poll() is None and not second.exists(),
+                    "Second scenario completed before the in-flight interruption.")
+            checked(time.monotonic() < deadline, "Timed out waiting for the second scenario to start.")
+            time.sleep(0.01)
         code = terminate(interrupted, output / "interrupted-matlab.log.pid", matlab)
         checked(code != 0, "The interrupted process returned a success status.")
         checked(not second.exists() and not third.exists(), "The kill did not leave a partial batch.")
-        checked(hashes(first) == original and len(original) == 6, "First commit changed after the kill.")
+        checked(hashes(first) == original and len(original) == 7, "First commit changed after the kill.")
         print("PASS forced termination of the dedicated MATLAB worker left one complete scenario", flush=True)
     finally:
         if interrupted.poll() is None:
@@ -116,9 +122,41 @@ def run(matlab, output):
     checked(all(row["status"] == "completed_model" for row in rows), "Unexpected run status.")
     for row, expected in zip(rows, [0, 0.554525932526224, 0]):
         checked(abs(float(row["ls_total"]) - expected) < 1e-7, "Changed reference loss fraction.")
-    subprocess.run([sys.executable, str(ROOT / "python/read_run.py"), first, second, third],
+    subprocess.run([sys.executable, str(ROOT / "python/read_run.py"), "--require-plan", first, second, third],
                    check=True)
     print("ACCFMLAB_CRASH_RESUME_PASSED", flush=True)
+
+
+def test_writer_lock(matlab, output):
+    output.mkdir(parents=True, exist_ok=False)
+    target = str(output).replace("'", "''")
+    holder = (
+        f"out='{target}';"
+        "f=java.io.RandomAccessFile(fullfile(out,'.writer.lock'),'rw');"
+        "lock=f.getChannel().tryLock();assert(~isempty(lock));"
+        "fid=fopen(fullfile(out,'holder.log.pid'),'w');"
+        "fprintf(fid,'%d',feature('getpid'));fclose(fid);"
+        "started=tic;while ~isfile(fullfile(out,'release')) && toc(started)<240,pause(0.1);end;"
+        "f.close();"
+    )
+    owner = launch(matlab, output, "holder.log", holder)
+    contender = None
+    try:
+        deadline = time.monotonic() + 120
+        while not (output / "holder.log.pid").is_file():
+            checked(owner.poll() is None and time.monotonic() < deadline, "Lock holder did not start.")
+            time.sleep(0.05)
+        contender = launch(matlab, output, "contender.log")
+        checked(contender.wait(timeout=120) != 0, "A contender acquired an already-held batch lock.")
+        journal = (output / "contender.log").read_bytes()
+        checked(b"Another process is writing this batch." in journal
+                and not (output / "plan.mat").exists(), "The contender failed outside the lock.")
+    finally:
+        (output / "release").touch()
+        if contender is not None and contender.poll() is None:
+            terminate(contender, output / "contender.log.pid", matlab)
+        checked(owner.wait(timeout=30) == 0, "The writer lock holder failed.")
+    print("PASS independent MATLAB processes cannot share a writer lock", flush=True)
 
 
 def main():
@@ -128,6 +166,7 @@ def main():
     args = parser.parse_args()
     checked(os.name == "nt", "This process-tree test requires Windows.")
     run(args.matlab, args.output.resolve())
+    test_writer_lock(args.matlab, args.output.resolve() / "lock-test")
 
 
 if __name__ == "__main__":

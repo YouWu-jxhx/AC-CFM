@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+import hashlib
 import json
 from collections import Counter
 from pathlib import Path
@@ -23,6 +24,48 @@ ACTION_COLUMNS = {
     "bus_uvls": ("bus", {"UVLS", "VC"}),
 }
 LOSS_ACTIONS = ("UFLS", "UVLS", "VC", "OPF")
+SCENARIO_FILES = ("record.mat", "metadata.json", "events.jsonl", "numeric.mat", "nodes.csv", "edges.csv")
+
+
+def sha256(path):
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def verify_integrity(folder, require_plan=False):
+    """Verify the committed bytes and, when present, the referenced plan."""
+    manifest_path = folder / "checksums.json"
+    if not manifest_path.is_file():
+        metadata = json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
+        if metadata["schema_version"] == 1 and not require_plan and "plan" not in metadata:
+            return
+        raise ValueError("Missing scenario checksum manifest")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    files = manifest["files"]
+    if manifest["version"] != 1 or tuple(item["name"] for item in files) != SCENARIO_FILES:
+        raise ValueError("Invalid scenario checksum manifest")
+    for item in files:
+        path = folder / item["name"]
+        if (not path.is_file() or path.stat().st_size != item["bytes"]
+                or sha256(path) != item["sha256"]):
+            raise ValueError(f"Missing or changed committed file {item['name']}")
+    metadata = json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
+    ref = metadata["plan"]
+    if (manifest["scenario_id"] != metadata["scenario"]["id"]
+            or manifest["plan_sha256"] != ref["sha256"]
+            or ref["mat"] != "../plan.mat" or ref["json"] != "../plan.json"):
+        raise ValueError("Scenario checksum manifest disagrees with plan reference")
+    mat_plan, json_plan = folder.parent / "plan.mat", folder.parent / "plan.json"
+    if require_plan or mat_plan.exists() or json_plan.exists():
+        if (not mat_plan.is_file() or not json_plan.is_file()
+                or sha256(mat_plan) != ref["sha256"] or sha256(json_plan) != ref["json_sha256"]):
+            raise ValueError("Missing or changed referenced plan")
+        plan = json.loads(json_plan.read_text(encoding="utf-8"))
+        scenarios = plan["manifest"] if isinstance(plan["manifest"], list) else [plan["manifest"]]
+        matches = [scenario for scenario in scenarios if scenario["id"] == manifest["scenario_id"]]
+        if (matches != [metadata["scenario"]] or plan["plan_sha256"] != ref["sha256"]
+                or plan["environment"]["case_sha256"] != metadata["case_sha256"]):
+            raise ValueError("Scenario metadata disagrees with referenced experiment")
 
 
 def ids(value):
@@ -125,9 +168,19 @@ def check_opf(events, data, columns):
             pending = None
         else:
             raise ValueError("Unpaired recovery OPF snapshot")
-    if pending is not None and any(event["stage"] == "recovery_opf_result" and
-                                   "opf_network_index" not in event for event in events):
-        raise ValueError("Recovery OPF result is missing its snapshot")
+    for n, event in enumerate(events):
+        stage = event["stage"]
+        if stage == "before_recovery_opf":
+            if n + 1 >= len(events) or events[n + 1]["stage"] not in (
+                "recovery_opf_result", "recovery_opf_exception",
+            ):
+                raise ValueError("Recovery OPF attempt is missing a result or exception")
+        if stage in ("before_recovery_opf", "recovery_opf_result") and "opf_network_index" not in event:
+            raise ValueError("Recovery OPF event is missing its snapshot")
+        if stage == "recovery_opf_result" and event["detail"]["success"]:
+            if n + 2 >= len(events) or events[n + 1]["stage"] != "verification_pf_input" or (
+                    events[n + 2]["stage"] not in ("verification_pf", "verification_pf_exception")):
+                raise ValueError("Successful recovery OPF is missing its verification PF")
 
 
 def check_graph(events, edges):
@@ -300,8 +353,9 @@ def validate(metadata, events, data, edges):
     check_outages(metadata, data)
 
 
-def validate_folder(folder):
+def validate_folder(folder, require_plan=False):
     folder = Path(folder)
+    verify_integrity(folder, require_plan)
     metadata, events, data, edges = read_scenario(folder)
     validate(metadata, events, data, edges)
     saved = loadmat(folder / "record.mat", variable_names=["record"], simplify_cells=True)["record"]
@@ -326,8 +380,10 @@ def validate_folder(folder):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("scenario", type=Path, nargs="+")
-    for folder in parser.parse_args().scenario:
-        metadata, events, _, edges = validate_folder(folder)
+    parser.add_argument("--require-plan", action="store_true", help="Require the two referenced plan files")
+    args = parser.parse_args()
+    for folder in args.scenario:
+        metadata, events, _, edges = validate_folder(folder, args.require_plan)
         print(f"{folder.name}: {metadata['summary']['status']}, "
               f"{len(events)} events, {len(edges)} graph edges, "
               f"lost MW={metadata['summary']['lost_mw']}")

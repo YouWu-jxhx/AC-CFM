@@ -33,15 +33,34 @@ function environment = setup(matpowerRoot)
         'ACCFMLab:VendorChanged','Restore the original pinned accfm.m and put changes in core/.');
 
     files = [dir(fullfile(root, '+accfmlab', '**', '*.m')); ...
-        dir(fullfile(vendor, '*.m')); dir(fullfile(core, 'accfm_observed.m'))];
+        dir(fullfile(vendor, '*')); dir(fullfile(core, 'accfm_observed.m')); ...
+        dir(fullfile(core, 'build_observed.py'))];
+    files = files(~[files.isdir]);
     inventory = strings(numel(files), 2);
     for n = 1:numel(files)
         file = fullfile(files(n).folder, files(n).name);
-        inventory(n,:) = [string(file(strlength(string(root))+2:end)), string(file_hash(file))];
+        relative = replace(string(file(length(root)+2:end)),'\','/');
+        inventory(n,:) = [relative, string(file_hash(file))];
+    end
+    inventory = sortrows(inventory,1);
+    implementation = java.security.MessageDigest.getInstance('SHA-256');
+    implementation.update(typecast(unicode2native(jsonencode(inventory),'UTF-8'),'int8'));
+    sourceHash = lower(reshape(dec2hex(typecast(implementation.digest(),'uint8'),2).',1,[]));
+
+    dependencies = {'runpf','runopf','mpoption','mips','nlpopf_solver','newtonpf', ...
+        'ext2int','extract_islands','load2disp'};
+    solverInventory = strings(numel(dependencies),2);
+    for n = 1:numel(dependencies)
+        file = which(dependencies{n});
+        assert(startsWith(file,[matpowerRoot filesep],'IgnoreCase',true), ...
+            'ACCFMLab:PathConflict','%s is outside the configured MATPOWER tree.',dependencies{n});
+        solverInventory(n,:) = [string(dependencies{n}),string(file_hash(file))];
     end
     environment = struct('matlab', version, 'computer', computer, 'matpower', mpver, ...
         'matpower_root', matpowerRoot, 'solver', 'MIPS', 'pf_core', 'legacy', ...
         'matpower_entry_hashes', {{file_hash(which('runpf')), file_hash(which('runopf'))}}, ...
         'upstream_commit', '48eebaa19b96b00ee40d7a86f5c1132be74efd8b', ...
-        'implementation_files', sortrows(inventory, 1), 'schema_version', 1);
+        'implementation_files', inventory, 'platform_source_sha256', sourceHash, ...
+        'observer_generator_sha256', file_hash(fullfile(core,'build_observed.py')), ...
+        'solver_inventory', solverInventory, 'schema_version', 2);
 end

@@ -12,6 +12,7 @@ function record = simulate(prepared, scenario)
     recorded = cell(0,1);
     states = cell(0,1);
     opfNetworks = cell(0,1);
+    observerFailure = [];
     s.record_states = prepared.config.record_states;
     s.observer = @collect;
     row = struct('scenario_id',scenario.id,'seed',scenario.seed,'status',"error", ...
@@ -23,6 +24,7 @@ function record = simulate(prepared, scenario)
     ledger = [];
     initial = [];
     failure = [];
+    errorCategory = '';
     try
         f = scenario.fault;
         assert(isstruct(f) && isscalar(f) && ...
@@ -55,6 +57,9 @@ function record = simulate(prepared, scenario)
             'The externally applied event removes all active demand; AC-CFM requires a positive denominator.');
         rng(scenario.seed,'twister');
         r = accfm_observed(input,struct('branches',branchRows,'gens',genRows),s);
+        if ~isempty(observerFailure)
+            rethrow(observerFailure);
+        end
 
         assert(isequal(r.branch_id,(1:size(pre.branch,1)).') && ...
             isequal(r.gen_id,(1:size(pre.gen,1)).') && isequal(r.bus_id,(1:size(pre.bus,1)).') && ...
@@ -103,18 +108,26 @@ function record = simulate(prepared, scenario)
                 abs(r.ls_total-(1-ledger.served_mw/modelMW))>1e-9 || ...
                 abs(r.load(end)-ledger.served_mw)>1e-6 || row.ls_total < -1e-8 || row.ls_total > 1+1e-8
             row.status = "review_ledger";
+            errorCategory = 'ledger';
         end
     catch err
+        if ~isempty(observerFailure)
+            rethrow(observerFailure);
+        end
         row.error_id = string(err.identifier);
         row.error_message = string(err.message);
         failure = struct('identifier',err.identifier,'message',err.message,'stack',err.stack);
-        if strcmp(err.message,'Iteration limit reached')
+        if strcmp(err.message,'Iteration limit reached') && isempty(err.identifier)
             row.status = "iteration_limit";
-        elseif ~isempty(recorded)
-            last = recorded{end}.stage;
-            if endsWith(last,'_pf_input') || strcmp(last,'before_recovery_opf')
-                row.status = "solver_error";
-            end
+            errorCategory = 'recursion_limit';
+        elseif ismember(err.identifier,{'ACCFMLab:Fault','ACCFMLab:FaultID', ...
+                'ACCFMLab:FaultOffline','ACCFMLab:ZeroModelLoad'})
+            errorCategory = 'input';
+        elseif is_solver_exception(recorded,err)
+            row.status = "solver_error";
+            errorCategory = 'solver_exception';
+        else
+            rethrow(err);
         end
     end
     for n = 1:numel(recorded)
@@ -128,22 +141,29 @@ function record = simulate(prepared, scenario)
     row.elapsed_sec = toc(clock);
     record = struct('summary',row,'scenario',scenario,'initial',initial, ...
         'ledger',ledger,'result',r,'events',{recorded},'states',{states},'failure',failure, ...
-        'opf_networks',{opfNetworks}, 'record_states',s.record_states,'finished_utc', ...
+        'error_category',errorCategory,'opf_networks',{opfNetworks}, 'record_states',s.record_states,'finished_utc', ...
         char(datetime('now','TimeZone','UTC','Format',"uuuu-MM-dd'T'HH:mm:ss.SSS'Z'")));
 
     function collect(entry,state)
-        entry.sequence = numel(recorded)+1;
-        entry.bus_rows = state.bus_rows;
-        entry.gen_rows = state.gen_rows;
-        entry.branch_rows = state.branch_rows;
-        if isfield(state,'opf_network')
-            opfNetworks{end+1,1} = state.opf_network;
-            entry.opf_network_index = numel(opfNetworks);
-            state = rmfield(state,'opf_network');
+        if ~isempty(observerFailure)
+            return
         end
-        recorded{end+1,1} = entry;
-        if s.record_states
-            states{end+1,1} = rmfield(state,{'bus_rows','gen_rows','branch_rows'});
+        try
+            entry.sequence = numel(recorded)+1;
+            entry.bus_rows = state.bus_rows;
+            entry.gen_rows = state.gen_rows;
+            entry.branch_rows = state.branch_rows;
+            if isfield(state,'opf_network')
+                opfNetworks{end+1,1} = state.opf_network;
+                entry.opf_network_index = numel(opfNetworks);
+                state = rmfield(state,'opf_network');
+            end
+            recorded{end+1,1} = entry;
+            if s.record_states
+                states{end+1,1} = rmfield(state,{'bus_rows','gen_rows','branch_rows'});
+            end
+        catch err
+            observerFailure = err;
         end
     end
 end
@@ -168,4 +188,14 @@ function map = classify(wasOnline, isOnline, initial, flags, flagsAreExplicit)
     map = struct('initial_rows',initial,'final_off_rows',finalOff, ...
         'flagged_rows',flagged,'explicit_trip_rows',explicit, ...
         'indirect_rows',setdiff(finalOff,union(initial,explicit)));
+end
+
+function matched = is_solver_exception(events,err)
+    matched = false;
+    if ~isempty(events)
+        last = events{end};
+        matched = ismember(last.stage,{'ac_pf_exception','verification_pf_exception', ...
+            'recovery_opf_exception'}) && strcmp(last.detail.identifier,err.identifier) && ...
+            strcmp(last.detail.message,err.message);
+    end
 end
