@@ -1,31 +1,27 @@
 function [pre, audit, raw] = prepare_case(caseFile, operatingPoint, alpha, s)
     define_constants;
     validateattributes(alpha, {'numeric'}, {'scalar','real','finite','positive'});
-    raw = loadcase(caseFile);
-    assert(numel(unique(raw.bus(:,BUS_I))) == size(raw.bus,1), 'Duplicate BUS_I.');
-    assert(all(raw.bus(:,BUS_TYPE) ~= NONE), 'Use an initially connected, energized case.');
-    assert(~any(isload(raw.gen)), 'Pass fixed loads to AC-CFM.');
-    assert(isempty(s.grid_forming) || isfield(raw,'gentype'), ...
-        'ACCFMLab:GridForming', 'A configured grid-forming filter requires case gentype data.');
-    assert(all(raw.bus(:,PD) >= 0), 'Use nonnegative fixed active demands.');
-    assert(all(raw.gen(:,PMIN) <= raw.gen(:,PMAX)));
-    assert(all(raw.gen(:,QMIN) <= raw.gen(:,QMAX)));
-    online = raw.branch(:,BR_STATUS)>0;
-    rates = raw.branch(online,RATE_A);
-    assert(~isempty(rates) && all(isfinite(rates) & rates>0), 'Missing active branch ratings.');
+    try
+        raw = loadcase(caseFile);
+    catch err
+        error('ACCFMLab:CaseFormat','Could not load the MATPOWER case: %s',err.message);
+    end
+    validate_case(raw,s);
     input = raw;
     input.bus(:,[PD QD]) = alpha * raw.bus(:,[PD QD]);
-    assert(sum(input.bus(:,PD)) > 0);
+    assert(all(isfinite(input.bus(:,[PD QD])),'all') && ...
+        isfinite(sum(input.bus(:,PD))) && sum(input.bus(:,PD))>0, ...
+        'ACCFMLab:CaseUnsupported','Scaled demands must be representable with positive total PD.');
 
     if strcmp(operatingPoint, 'opf')
         [op, opOK] = runopf(input,s.mpopt);
-        assert(opOK, 'Pre-contingency AC OPF failed.');
+        assert(opOK, 'ACCFMLab:PreflightOPF', 'Pre-contingency AC OPF failed.');
         input.bus(:,[VM VA]) = op.bus(:,[VM VA]);
         input.gen(:,[PG QG VG]) = op.gen(:,[PG QG VG]);
     end
     input.gen(input.gen(:,GEN_STATUS)<=0,[PG QG]) = 0;
     [pre, pfOK] = runpf(input,s.mpopt);
-    assert(pfOK, 'Pre-contingency AC PF failed.');
+    assert(pfOK, 'ACCFMLab:PreflightPF', 'Pre-contingency AC PF failed.');
 
     b = pre.bus(:,BUS_TYPE)~=NONE;
     g = pre.gen(:,GEN_STATUS)>0;
@@ -52,14 +48,14 @@ function [pre, audit, raw] = prepare_case(caseFile, operatingPoint, alpha, s)
         'max_mismatch_pu',norm(mismatch,inf));
     tolPQ = 1e-3; tolV = 1e-5; tolS = 1e-3; tolAngle = 1e-4;
     assert(all(pre.gen(g,PG) <= pre.gen(g,PMAX)+tolPQ & ...
-               pre.gen(g,PG) >= pre.gen(g,PMIN)-tolPQ),'P limit violation.');
+               pre.gen(g,PG) >= pre.gen(g,PMIN)-tolPQ),'ACCFMLab:PreflightState','P limit violation.');
     assert(all(pre.gen(g,QG) <= pre.gen(g,QMAX)+tolPQ & ...
-               pre.gen(g,QG) >= pre.gen(g,QMIN)-tolPQ),'Q limit violation.');
+               pre.gen(g,QG) >= pre.gen(g,QMIN)-tolPQ),'ACCFMLab:PreflightState','Q limit violation.');
     assert(all(pre.bus(b,VM) >= pre.bus(b,VMIN)-tolV & ...
-               pre.bus(b,VM) <= pre.bus(b,VMAX)+tolV),'Voltage limit violation.');
-    assert(all(max(sf,st) <= pre.branch(l,RATE_A)+tolS),'Branch rating violation.');
+               pre.bus(b,VM) <= pre.bus(b,VMAX)+tolV),'ACCFMLab:PreflightState','Voltage limit violation.');
+    assert(all(max(sf,st) <= pre.branch(l,RATE_A)+tolS),'ACCFMLab:PreflightState','Branch rating violation.');
     assert(all(angle(useLower)>=amin(useLower)-tolAngle) && ...
-           all(angle(useUpper)<=amax(useUpper)+tolAngle),'Angle limit violation.');
+           all(angle(useUpper)<=amax(useUpper)+tolAngle),'ACCFMLab:PreflightState','Angle limit violation.');
     assert(audit.max_mismatch_pu < 1e-6, 'AC balance residual too large.');
     [groups, isolated] = find_islands(pre);
     assert(numel(groups)==1 && isempty(isolated) && nnz(pre.bus(:,BUS_TYPE)==REF)==1);

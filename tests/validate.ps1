@@ -22,7 +22,7 @@ try {
 
     $tests = "addpath('tests'); regression(fullfile('$target','regression')); " +
         "extended(fullfile('$target','extended')); protections; " +
-        "recovery(fullfile('$target','recovery'));"
+        "recovery(fullfile('$target','recovery')); case_inputs(fullfile('$target','cases'));"
     & $Matlab -wait -sd $root -logfile (Join-Path $destination 'matlab-validation.log') -batch $tests
     if ($LASTEXITCODE -ne 0) { throw 'MATLAB validation failed.' }
 
