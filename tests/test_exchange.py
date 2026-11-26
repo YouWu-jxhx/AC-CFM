@@ -1,5 +1,6 @@
 """Corruption checks for the archived exchange and a new traced exchange if supplied."""
 
+from collections import Counter
 import copy
 import os
 import shutil
@@ -78,12 +79,23 @@ class ExchangeValidation(unittest.TestCase):
             edges[0]["action"] = "unknown"
         self.check_corruption(corrupt)
 
+    def test_nonbinary_native_matrix_flag(self):
+        def corrupt(meta, events, data, edges):
+            where = tuple(np.argwhere(data["branch_tripped"] == 1)[0])
+            data["branch_tripped"][where] = 2
+        self.check_corruption(corrupt)
+
     def test_new_recovery_opf_mapping_and_diagnostics(self):
         if self.new_scenario is None:
             self.skipTest("Set ACCFM_TEST_SCENARIO to a fresh traced recovery scenario")
         metadata, events, data, edges = validate_folder(self.new_scenario)
         results = [event for event in events if event["stage"] == "recovery_opf_result"]
         self.assertTrue(results and any(e["detail"]["success"] for e in results))
+        if metadata.get("observations_version") == 3:
+            pairs = Counter((edge["source"], edge["target"]) for edge in edges)
+            self.assertGreater(max(pairs.values()), 1)
+            splits = [event for event in events if event["stage"] == "island_split"]
+            self.assertGreater(len({event["generation"] for event in splits}), 1)
         corrupted = copy.deepcopy(events)
         next(event for event in corrupted if event["stage"] == "recovery_opf_result"
              )["detail"]["dispatchable_shed_mw"] += 1

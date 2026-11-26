@@ -28,6 +28,8 @@ function case_inputs(output)
         'inverted angle bounds', @() set_at(set_at(stock,'branch',1,ANGMIN,20),'branch',1,ANGMAX,10), 'CaseFormat';
         'cost rows', @() change_field(stock,'gencost',stock.gencost(1,:)), 'CaseFormat';
         'invalid cost degree', @() set_at(stock,'gencost',1,NCOST,100), 'CaseFormat';
+        'inverted P/Q curve', @() set_at(set_at(stock,'gen',1,PC1,10),'gen',1,PC2,5), 'CaseFormat';
+        'unsupported gentype orientation', @() change_field(stock,'gentype',{'GT','GT','GT'}), 'CaseUnsupported';
         'gentype rows', @() change_field(stock,'gentype',{'GT'}), 'CaseFormat';
         'valid unlimited rating', @() set_at(stock,'branch',1,RATE_A,0), 'CaseUnsupported';
         'valid generator status', @() set_at(stock,'gen',1,GEN_STATUS,2), 'CaseUnsupported';
@@ -63,9 +65,13 @@ function case_inputs(output)
     mpc.branch(1,[BR_B RATE_A RATE_B RATE_C]) = 0.5*mpc.branch(1,[BR_B RATE_A RATE_B RATE_C]);
     mpc.branch(end+1,:) = mpc.branch(1,:);
     mpc.branch(end,RATE_B) = Inf;
+    mpc.branch(end,[ANGMIN ANGMAX]) = [-Inf Inf];
     mpc.gen(2,[PG QG QMAX QMIN PMAX PMIN]) = 0.5*mpc.gen(2,[PG QG QMAX QMIN PMAX PMIN]);
     mpc.gen(end+1,:) = mpc.gen(2,:);
     mpc.gen(end,VG) = mpc.gen(2,VG);
+    mpc.gencost(end+1,:) = mpc.gencost(2,:);
+    mpc.gen(end+1,:) = mpc.gen(2,:);
+    mpc.gen(end,[PG QG VG GEN_STATUS]) = 0;
     mpc.gencost(end+1,:) = mpc.gencost(2,:);
     mpc.gentype = repmat({'GT'},size(mpc.gen,1),1);
     cfg.case_file = fullfile(output,'legal.mat');

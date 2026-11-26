@@ -93,6 +93,8 @@ def read_scenario(folder):
     metadata = json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
     if metadata["schema_version"] not in (1, 2):
         raise ValueError("Unsupported result schema")
+    if metadata.get("observations_version", 1) not in (1, 2, 3):
+        raise ValueError("Unsupported observation revision")
     events = [
         json.loads(line)
         for line in (folder / "events.jsonl").read_text(encoding="utf-8").splitlines()
@@ -132,7 +134,8 @@ def check_events(metadata, events, data):
                 raise ValueError(f"{kind} action row outside island at event {n + 1}")
 
 
-def check_opf(events, data, columns):
+def check_opf(events, data, metadata):
+    columns = metadata["columns_1based"]
     snapshots = data["opf_networks"].ravel()
     references = [event for event in events if "opf_network_index" in event]
     if [event["opf_network_index"] for event in references] != list(range(1, len(snapshots) + 1)):
@@ -145,11 +148,14 @@ def check_opf(events, data, columns):
         rows = ids(event["gen_rows"])
         np.testing.assert_array_equal(gen_rows[:len(rows)], rows)
         np.testing.assert_array_equal(gen_rows[len(rows):], 0)
-        for kind, identity in (("bus", [0]), ("branch", [0, 1, 2, 3, 4])):
+        if metadata.get("observations_version", 1) >= 3:
+            compare_numeric(network["baseMVA"], metadata["base_mva"])
+        for kind, identity in (("bus", [0]), ("branch", [c for c in IDENTITY["branch"] if c != 5])):
             check_identity(network[kind], data[f"pre_{kind}"], ids(event[f"{kind}_rows"]), identity)
-        check_identity(network["gen"][:len(rows)], data["pre_gen"], rows, [0])
+        check_identity(network["gen"][:len(rows)], data["pre_gen"], rows, [0, 6, 8])
         synthetic = network["gen"][len(rows):, 0]
-        if len(network["gen"]) != len(gen_rows) or not np.all(np.isin(synthetic, network["bus"][:, 0])):
+        if (len(network["gen"]) != len(gen_rows) or len(np.unique(synthetic)) != len(synthetic)
+                or not np.all(np.isin(synthetic, network["bus"][:, 0]))):
             raise ValueError("Invalid dispatchable-load generator mapping")
         key = (event["generation"], event["local_depth"], event["graph_parent"])
         if stage == "before_recovery_opf":
@@ -191,11 +197,13 @@ def check_opf(events, data, columns):
                     events[start + 1]["stage"] not in ("verification_pf", "verification_pf_exception")):
                 raise ValueError("Successful recovery OPF is missing its verification PF")
             for related in events[n + 1:start + 2]:
-                if any(related[key] != event[key] for key in ("generation", "local_depth", "graph_parent")):
+                if any(related[key] != event[key] for key in ("generation", "local_depth", "graph_parent",
+                                                               "bus_rows", "gen_rows", "branch_rows")):
                     raise ValueError("Recovery OPF verification changed island scope")
         if stage == "before_recovery_opf":
             following = events[n + 1]
-            if any(following[key] != event[key] for key in ("generation", "local_depth", "graph_parent")):
+            if any(following[key] != event[key] for key in ("generation", "local_depth", "graph_parent",
+                                                               "bus_rows", "gen_rows", "branch_rows")):
                 raise ValueError("Recovery OPF outcome changed island scope")
 
 
@@ -387,6 +395,10 @@ def recovery_write(events, index, data, metadata):
 def replay_observations(metadata, events, data, edges, nodes=None):
     """Rebuild native action matrices and graph updates from observed inputs."""
     terminal = metadata["result_available"]
+    maximum, step = metadata["uvls_max_steps"], metadata["uvls_per_step"]
+    if not (np.isfinite(maximum) and maximum >= 0 and maximum == int(maximum)
+            and np.isfinite(step) and 0 <= step <= 1 and step * maximum <= 1):
+        raise ValueError("Invalid UVLS settings")
     uvls = np.zeros_like(data["bus_uvls"]) if terminal else None
     ufls = np.zeros_like(data["bus_ufls"]) if terminal else None
     expected_nodes = {}
@@ -446,7 +458,6 @@ def replay_observations(metadata, events, data, edges, nodes=None):
                     raise ValueError("UVLS step rows fall outside the action")
                 dropped = np.setdiff1d(rows, stepped)
                 steps = np.count_nonzero(uvls, axis=1)
-                maximum, step = metadata["uvls_max_steps"], metadata["uvls_per_step"]
                 if np.any(steps[stepped] >= maximum) or np.any(steps[dropped] < maximum):
                     raise ValueError("UVLS write disagrees with preceding nonzero history")
                 uvls[stepped, generation - 1] = step / (1 - step * steps[stepped])
@@ -530,7 +541,7 @@ def validate(metadata, events, data, edges, nodes=None):
     check_events(metadata, events, data)
     extended = metadata.get("observations_version", 1) >= 2
     if extended:
-        check_opf(events, data, metadata["columns_1based"])
+        check_opf(events, data, metadata)
     replay = metadata.get("observations_version", 1) >= 3
     if replay:
         check_status(metadata, events)

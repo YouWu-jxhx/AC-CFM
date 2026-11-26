@@ -21,8 +21,8 @@ function controlled_cases()
     s.observer = @collect;
 
     base = fixture();
-    cases = {'UFLS','OFGS','XL','ULGT','UVLS','OL','VC','SH','OPF','verify_failure'};
-    rows = {2,2,2,2,2,2,2,2,[1;2],[1;2]};
+    cases = {'UFLS','OFGS','XL','ULGT','UVLS','OL','VC','SH','OPF','verify_failure','retry_pmin'};
+    rows = {2,2,2,2,2,2,2,2,[1;2],[1;2],zeros(0,1)};
     addpath(fullfile(fileparts(mfilename('fullpath')),'fixtures','protection'),'-begin');
     setappdata(0,'accfmlab_test_pf',@pf);
     setappdata(0,'accfmlab_test_opf',@opf);
@@ -38,6 +38,8 @@ function controlled_cases()
             input.gen(:,PG) = [20;20];
         elseif strcmp(kind,'SH')
             input.bus(2,BS) = 10;
+        elseif strcmp(kind,'retry_pmin')
+            input.gen(2,[PG PMIN]) = [5 5];
         end
         records = {};
         states = {};
@@ -59,6 +61,8 @@ function controlled_cases()
         action = kind;
         if strcmp(kind,'verify_failure')
             action = 'OPF';
+        elseif strcmp(kind,'retry_pmin')
+            action = 'VC';
         end
         event = find(cellfun(@(e) strcmp(e.stage,'action') && strcmp(e.detail.type,action),records));
         assert(isscalar(event),kind);
@@ -113,6 +117,12 @@ function controlled_cases()
                     assert(records{outputs(1)}.detail.success && records{outputs(1)}.detail.objective==15);
                     assert(records{outputs(1)}.detail.dispatchable_shed_mw==15 && state.bus(2,PD)==25);
                     loss = 15;
+                elseif strcmp(kind,'retry_pmin')
+                    assert(numel(inputs)==2 && ~records{outputs(1)}.detail.success && ...
+                        records{outputs(2)}.detail.success && isempty(e.detail.bus_rows));
+                    assert(states{inputs(1)}.opf_network.gen(2,PMIN)==5);
+                    assert(states{inputs(2)}.opf_network.gen(2,PMIN)==0);
+                    assert(states{inputs(2)}.opf_network.gen(3,PMIN)==-40);
                 else
                     assert(all(state.bus(:,BUS_TYPE)==NONE) && all(result.bus_tripped(:,1)==1));
                     loss = 40;
@@ -170,7 +180,7 @@ function controlled_cases()
                     net.bus(2,VM) = 0.85;
                 case 'OL'
                     net.branch(2,[PF PT]) = [120 -120];
-                case {'VC','SH','OPF','verify_failure'}
+                case {'VC','SH','OPF','verify_failure','retry_pmin'}
                     net.success = false;
             end
         else
@@ -184,7 +194,8 @@ function controlled_cases()
 
     function net = opf(net, ~)
         opfCalls = opfCalls+1;
-        net.success = ~strcmp(kind,'OPF') && ~(strcmp(kind,'SH') && net.bus(2,BS)~=0);
+        net.success = ~strcmp(kind,'OPF') && ~(strcmp(kind,'SH') && net.bus(2,BS)~=0) && ...
+            ~(strcmp(kind,'retry_pmin') && any(net.gen(:,PMIN)>0));
         net.f = 0;
         net.raw.output.iterations = 1;
         if net.success && any(strcmp(kind,{'VC','verify_failure'}))
