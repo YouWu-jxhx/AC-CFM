@@ -1,0 +1,31 @@
+cff-version: 1.2.0
+message: "Please cite this research platform and acknowledge the upstream AC-CFM model and benchmark case."
+title: "AC-CFM Research Simulation Platform"
+type: software
+authors:
+  - name: "AC-CFM platform contributors"
+repository-code: "https://github.com/YouWu-jxhx/AC-CFM"
+license: MIT
+references:
+  - type: article
+    title: "AC Cascading Failure Model for Resilience Analysis in Power Networks"
+    authors:
+      - family-names: Noebels
+        given-names: Matthias
+      - family-names: Preece
+        given-names: Robin
+      - family-names: Panteli
+        given-names: Mathaios
+    journal: "IEEE Systems Journal"
+    year: 2022
+    volume: 16
+    issue: 1
+    start: 374
+    end: 385
+    doi: "10.1109/JSYST.2020.3037400"
+  - type: data
+    title: "Power Grid Library for Benchmarking AC Optimal Power Flow Algorithms"
+    authors:
+      - name: "IEEE PES PGLib-OPF Task Force"
+    version: "v23.07"
+    url: "https://github.com/power-grid-lib/pglib-opf/tree/v23.07"

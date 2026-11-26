@@ -24,3 +24,11 @@
 - 四组新 MATLAB 进程实测 9 和 118 母线、事故宽度 0 至 2、快照关与全量，共 48 场景。每组中包含 4 个事故各 3 次。
 - 48/48 有终态并通过 Python 文件、计划、动作和账本校验。12/48 曾有返回失败的 PF 后恢复。实测峰值、耗时、快照字节、MAT/JSONL 和磁盘增长见 [性能报告](PERFORMANCE-REPORT.md) 和 [原始指标](benchmarks/)。
 - 保留现有 MAT v7、状态记录级别和串行架构。超大变量、长批次成本及并行可靠性仍需相应规模的实测。
+
+## 第五阶段
+
+- 将 11 个 vendor 文件与上游提交 `48eebaa19b96b00ee40d7a86f5c1132be74efd8b` 对照。10 个字节相同。保留 `randraw.m` 第 920 行的历史注释编码差异。生成器 2.0 的 `--check` 输出匹配提交中的观察版字节。
+- 实际运行 `tests/validate.ps1 -OutputDir <新目录> -IncludeCrash`，结束标记为 `ACCFMLAB_VALIDATION_PASSED`。通过固定 118、扩展事故、损坏与缺失、文件系统故障注入、未知错误终止、求解调用异常分类、真实进程终止续算及双 MATLAB 进程争锁。
+- 双母线真实 NR/MIPS 验证 UFLS、OFGS、XL、ULGT、UVLS、OL、SH、VC、OPF 恢复成功与恢复尝试耗尽停岛。两种种子仅改变测试图的随机节点名。另用受控返回覆盖 OPF 成功后核验 PF 失败停岛。后一路径仍待真实网络的独立复现。
+- 20/20 Python 检查通过，包含新生成的恢复 OPF 场景。另验证 23 个本轮正式测试目录的数据及计划引用。托管 Python 流水线运行生成器和无 MATLAB 的单元测试。依赖本地产出场景的测试在授权 Windows 入口执行。
+- `CITATION.cff` 通过官方 CFF 1.2.0 schema 校验。平台采用 MIT，第三方声明保留原许可。相对文档链接检查通过，`vendor/`、`cases/`、`evidence/` 相对审计基线无 Git 差异。

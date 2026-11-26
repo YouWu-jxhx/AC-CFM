@@ -353,6 +353,55 @@ def validate(metadata, events, data, edges):
     check_outages(metadata, data)
 
 
+def mat_cells(value):
+    return [value] if isinstance(value, dict) else list(value)
+
+
+def compare_numeric(saved, exported):
+    left, right = np.asarray(saved), np.asarray(exported)
+    if left.size or right.size:
+        np.testing.assert_array_equal(left.squeeze(), right.squeeze())
+
+
+def check_record_exports(record, metadata, events, data):
+    if bool(record["record_states"]) != metadata["record_states"] or (
+        isinstance(record["result"], dict) != metadata["result_available"]
+    ):
+        raise ValueError("Record availability flags disagree with metadata")
+    for field, value in metadata["summary"].items():
+        if not isinstance(value, str):
+            compare_numeric(record["summary"][field], np.nan if value is None else value)
+    saved_events = mat_cells(record["events"])
+    if len(saved_events) != len(events):
+        raise ValueError("record.mat and JSONL event counts disagree")
+    for source, exported in zip(saved_events, events):
+        for field in ("sequence", "stage", "generation", "local_depth", "graph_parent"):
+            if source[field] != exported[field]:
+                raise ValueError(f"record.mat and JSONL disagree on {field}")
+        for kind in IDENTITY:
+            field = f"{kind}_rows"
+            np.testing.assert_array_equal(ids(source[field]), ids(exported[field]))
+        if exported["stage"] == "action":
+            for field in ("type", "target"):
+                if source["detail"][field] != exported["detail"][field]:
+                    raise ValueError(f"record.mat and JSONL disagree on action {field}")
+    saved_states = mat_cells(record["states"])
+    if len(saved_states) != (len(events) if metadata["record_states"] else 0):
+        raise ValueError("Unexpected record.mat snapshot count")
+    if saved_states:
+        for kind in IDENTITY:
+            for state, export in zip(saved_states, data[f"state_{kind}"].ravel()):
+                compare_numeric(state[kind], export)
+    if "opf_networks" in data:
+        saved_opf = mat_cells(record["opf_networks"])
+        exported_opf = data["opf_networks"].ravel()
+        if len(saved_opf) != len(exported_opf):
+            raise ValueError("record.mat and numeric.mat OPF snapshot counts disagree")
+        for snapshot, export in zip(saved_opf, exported_opf):
+            for field in snapshot:
+                compare_numeric(snapshot[field], export[0, 0][field])
+
+
 def validate_folder(folder, require_plan=False):
     folder = Path(folder)
     verify_integrity(folder, require_plan)
@@ -363,9 +412,12 @@ def validate_folder(folder, require_plan=False):
         metadata["scenario"]["id"], metadata["scenario"]["seed"]
     ):
         raise ValueError("record.mat scenario disagrees with metadata")
-    for key in ("bus_numbers", "branch_rows", "gen_rows"):
-        np.testing.assert_array_equal(ids(saved["scenario"]["fault"][key]),
-                                      ids(metadata["scenario"]["fault"][key]))
+    check_record_exports(saved, metadata, events, data)
+    error_category = metadata.get("error_category", "")
+    if error_category != "input":
+        for key in ("bus_numbers", "branch_rows", "gen_rows"):
+            np.testing.assert_array_equal(ids(saved["scenario"]["fault"][key]),
+                                          ids(metadata["scenario"]["fault"][key]))
     if metadata["result_available"]:
         nodes = csv_rows(folder / "nodes.csv")
         names = {node["Name"] for node in nodes}
@@ -373,7 +425,7 @@ def validate_folder(folder, require_plan=False):
         if len(names) != len(nodes) or names != endpoints:
             raise ValueError("Graph nodes and edge endpoints disagree")
         for key in ("bus", "gen", "branch", *ACTION_COLUMNS):
-            np.testing.assert_array_equal(saved["result"][key], data[key].squeeze())
+            compare_numeric(saved["result"][key], data[key])
     return metadata, events, data, edges
 
 

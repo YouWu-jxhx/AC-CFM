@@ -2,11 +2,14 @@
 
 import copy
 import os
+import shutil
+from tempfile import TemporaryDirectory
 from pathlib import Path
 import sys
 import unittest
 
 import numpy as np
+from scipy.io import savemat
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "python"))
@@ -29,6 +32,18 @@ class ExchangeValidation(unittest.TestCase):
 
     def test_historical_exchange(self):
         validate_folder(self.historical)
+
+    def test_snapshot_differs_from_matlab_record(self):
+        with TemporaryDirectory() as tmp:
+            folder = Path(tmp) / "scenario"
+            shutil.copytree(self.historical, folder)
+            metadata, events, data, edges = read_scenario(folder)
+            # An electrical value can disagree while preserving topology and row identity.
+            data["state_bus"].flat[0][0, 7] += 0.02
+            validate(metadata, events, data, edges)
+            savemat(folder / "numeric.mat", {k: v for k, v in data.items() if not k.startswith("__")})
+            with self.assertRaises(AssertionError):
+                validate_folder(folder)
 
     def test_local_generator_identity(self):
         def corrupt(meta, events, data, edges):

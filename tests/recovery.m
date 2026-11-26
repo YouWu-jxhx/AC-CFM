@@ -81,6 +81,18 @@ function recovery(output)
     prepared.pre = rmfield(prepared.pre,'branch');
     assert_error(@() simulate(prepared,scenarios(1)),'MATLAB:nonExistentField');
     fprintf('PASS unknown program error propagates through simulation boundary\n');
+    fixtureDir = fullfile(fileparts(mfilename('fullpath')),'fixtures','protection');
+    addpath(fixtureDir,'-begin');
+    restoreSolvers = onCleanup(@() reset_solvers(fixtureDir)); %#ok<NASGU>
+    setappdata(groot,'accfmlab_test_pf',@fail_pf);
+    setappdata(groot,'accfmlab_test_opf',@fail_opf);
+    failed = simulate(plan.prepared,scenarios(1));
+    assert(failed.summary.status=="solver_error" && failed.summary.has_solver_failure);
+    assert(strcmp(failed.error_category,'solver_exception') && isempty(failed.result));
+    stages = cellfun(@(event) event.stage,failed.events,'UniformOutput',false);
+    assert(any(strcmp(stages,'ac_pf_exception')) && strcmp(stages{end},'recovery_opf_exception'));
+    assert(failed.summary.error_id=="ACCFMLabTest:OPF" && numel(failed.opf_networks)==1);
+    fprintf('PASS solver exceptions retain a journal and distinct failure category\n');
     fprintf('ACCFMLAB_RECOVERY_PASSED %s\n',output);
 end
 
@@ -100,4 +112,18 @@ function assert_error(action,identifier)
         return
     end
     error('Expected %s.',identifier);
+end
+
+function result = fail_pf(~,~) %#ok<STOUT>
+    error('ACCFMLabTest:PF','Injected PF exception.');
+end
+
+function result = fail_opf(~,~) %#ok<STOUT>
+    error('ACCFMLabTest:OPF','Injected OPF exception.');
+end
+
+function reset_solvers(folder)
+    rmpath(folder);
+    rmappdata(groot,'accfmlab_test_pf');
+    rmappdata(groot,'accfmlab_test_opf');
 end

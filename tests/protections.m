@@ -4,6 +4,7 @@ function protections()
     oldRng = rng; oldWarnings = warning; oldPath = path;
     restored = onCleanup(@() restore(oldRng,oldWarnings,oldPath)); %#ok<NASGU>
     real_small_network();
+    real_action_cases();
     controlled_cases();
     fprintf('ACCFMLAB_PROTECTIONS_PASSED %s\n',environment.matlab);
 end
@@ -227,6 +228,124 @@ function real_small_network()
     assert(result.bus_uvls(2,1)>0 && nnz(strcmp(result.G.Edges.Type,'UVLS'))>=1);
     assert(abs(40-sum(result.bus(:,PD))-40*result.ls_uvls)<1e-7);
     fprintf('PASS real two-bus NR overload, undervoltage and seed equivalence\n');
+end
+
+function real_action_cases()
+% Synthetic post-event island states with genuine NR/MIPS solver calls.
+    [PQ,~,~,NONE,BUS_I,BUS_TYPE,PD,QD,GS,BS,~,~,~,~,~,~,VMIN] = idx_bus;
+    [GEN_BUS,PG,QG,QMAX,~,~,~,GEN_STATUS,PMAX,PMIN] = idx_gen;
+    [F_BUS,T_BUS,~,~,~,RATE_A] = idx_brch;
+    s = get_default_settings();
+    s.grid_forming = {};
+    s.mpopt = mpoption(s.mpopt,'exp.use_legacy_core',1,'opf.ac.solver','MIPS');
+    s.observer = @collect;
+    s.record_states = true;
+    cases = {'UFLS','OFGS','XL','ULGT','VC','SH','OPF'};
+    for n = 1:numel(cases)
+        kind = cases{n};
+        input = fixture();
+        if ismember(kind,{'VC','SH','OPF'})
+            input.bus(:,BUS_TYPE) = PQ;
+            input.bus(:,VMIN) = 0.2;
+            input.gen(2,GEN_STATUS) = 0;
+            input.success = true;  % inherited successful pre-event solve
+        end
+        switch kind
+            case 'UFLS'
+                input.bus(2,BUS_TYPE) = PQ;
+                input.gen(2,GEN_STATUS) = 0;
+                input.gen(1,PG) = 30;
+            case 'OFGS'
+                input.gen(1,PG) = 80;
+            case 'XL'
+                input.bus(2,QD) = 20;
+                input.gen(2,QMAX) = 2;
+            case 'ULGT'
+                input.gen(2,PMIN) = 5;
+            case 'VC'
+                input.gen(1,PMAX) = 25;
+            case 'SH'
+                input.bus(2,BS) = -5000;
+            case 'OPF'
+                input.gen(1,PMAX) = 25;
+                input.bus(2,GS) = 1000;
+        end
+        records = {};
+        states = {};
+        rng(73,'twister');
+        result = accfm_observed(input,struct(),s);
+        rng(73,'twister');
+        stock = accfm(input,struct(),rmfield(s,{'observer','record_states'}));
+        assert(isequaln(result.bus,stock.bus) && isequaln(result.gen,stock.gen) && ...
+            isequaln(result.branch,stock.branch) && result.pf_count==stock.pf_count && ...
+            isequaln(result.G.Edges,stock.G.Edges) && isequaln(result.G.Nodes,stock.G.Nodes),kind);
+        selected = find(cellfun(@(e) strcmp(e.stage,'action') && strcmp(e.detail.type,kind),records));
+        assert(isscalar(selected),kind);
+        event = records{selected};
+        state = states{selected};
+        assert(event.generation==1 && any(strcmp(result.G.Edges.Type,kind) & ...
+            strcmp(result.G.Edges.EndNodes(:,1),event.graph_parent) & ...
+            strcmp(result.G.Edges.EndNodes(:,2),event.detail.target)),kind);
+        assert(isequal(state.bus(:,BUS_I),input.bus(state.bus_rows,BUS_I)));
+        assert(isequal(state.gen(:,GEN_BUS),input.gen(state.gen_rows,GEN_BUS)));
+        assert(isequal(state.branch(:,[F_BUS T_BUS]),input.branch(state.branch_rows,[F_BUS T_BUS])));
+        stages = cellfun(@(e) e.stage,records,'UniformOutput',false);
+        freq = find(strcmp(stages,'before_frequency'),1);
+        limits = find(strcmp(stages,'before_limit_actions'),1);
+        attempts = find(strcmp(stages,'before_recovery_opf'));
+        outcomes = find(strcmp(stages,'recovery_opf_result'));
+        if ~isempty(attempts)
+            assert(isequal(outcomes,attempts+1));
+            assert(all(states{attempts(1)}.opf_network.branch(:,RATE_A)==0));
+            assert(isequal(states{attempts(1)}.opf_network.gen_rows,[1;2;0]));
+            assert(strcmp(records{outcomes(end)}.detail.solver,'MIPS'));
+        end
+        loss = zeros(1,5);
+        switch kind
+            case 'UFLS'
+                assert(abs(records{freq}.detail.delta_pg_mw-10)<1e-7 && event.detail.bus_rows==2);
+                assert(abs(state.bus(2,PD)-31.3636)<1e-7);
+                loss(1) = 8.6364;
+            case 'OFGS'
+                assert(records{freq}.detail.delta_pg_mw < -39 && event.detail.gen_rows==2);
+                assert(state.gen(2,GEN_STATUS)==0 && result.gen_tripped(2,1)==1);
+            case 'XL'
+                assert(states{limits}.gen(2,QG)>20 && event.detail.gen_rows==2);
+                assert(state.gen(2,QG)==2 && state.bus(2,BUS_TYPE)==PQ);
+            case 'ULGT'
+                assert(states{limits}.gen(2,PG)==0 && event.detail.gen_rows==2);
+                assert(state.gen(2,GEN_STATUS)==0 && result.gen_tripped(2,1)==1);
+            case 'VC'
+                assert(isscalar(outcomes) && records{outcomes}.detail.success && event.detail.bus_rows==2);
+                assert(abs(records{outcomes}.detail.dispatchable_shed_mw-15)<1e-5);
+                assert(abs(state.bus(2,PD)-25)<1e-5 && verification_succeeded(records,stages));
+                loss(3) = 15;
+            case 'SH'
+                assert(numel(outcomes)==2 && ~records{outcomes(1)}.detail.success && ...
+                    records{outcomes(2)}.detail.success && verification_succeeded(records,stages));
+                assert(states{attempts(1)}.opf_network.bus(2,BS)==-5000);
+                assert(states{attempts(2)}.opf_network.bus(2,BS)==0 && state.bus(2,BS)==0);
+                assert(event.detail.bus_rows==2);
+            case 'OPF'
+                assert(numel(outcomes)==2 && all(cellfun(@(e) ~e.detail.success,records(outcomes))));
+                assert(~any(strcmp(stages,'verification_pf')) && strcmp(event.detail.reason,'recovery_attempts_exhausted'));
+                assert(isequal(event.detail.bus_rows,[1;2]) && all(state.bus(:,BUS_TYPE)==NONE));
+                loss(4) = 40;
+        end
+        actual = [result.ls_ufls result.ls_uvls result.ls_vcls result.ls_opf result.ls_tripped]*40;
+        assert(max(abs(actual-loss))<1e-5 && abs(40-sum(result.bus(:,PD))-sum(loss))<1e-5,kind);
+        fprintf('PASS isolated %s with real NR/MIPS\n',kind);
+    end
+
+    function collect(entry,state)
+        records{end+1} = entry;
+        states{end+1} = state;
+    end
+end
+
+function success = verification_succeeded(events,stages)
+    event = find(strcmp(stages,'verification_pf'),1);
+    success = ~isempty(event) && events{event}.detail.success;
 end
 
 function net = fixture()
