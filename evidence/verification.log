@@ -1,0 +1,26 @@
+[1/4] scenario 1 completed_model
+[2/4] scenario 2 completed_model
+[3/4] scenario 3 completed_model
+[4/4] scenario 4 completed_model
+PASS fixed 118 pilot outputs and N-0
+[1/4] scenario 1 completed_model
+[2/4] scenario 2 completed_model
+[3/4] scenario 3 completed_model
+[4/4] scenario 4 completed_model
+PASS exact upstream/trace-off/trace-on equivalence across all four cases
+[4/4] scenario 4 completed_model
+PASS resume fills missing scenario and rejects a changed manifest
+[1/3] scenario 1 completed_model
+[2/3] scenario 2 error
+[3/3] scenario 3 completed_model
+[1/1] scenario 1 iteration_limit
+PASS scenario failure isolation and recursion-limit record through single entry
+[1/1] scenario 1 completed_model
+PASS supplied MAT case and PF-only operating point
+ACCFMLAB_REGRESSION_PASSED C:\Users\16422\.codex\.chatgpt-projects\g-p-6ad88f0eac2c81919cf0cc6096d551ce\work\ac-cfm-platform\runs\verification-final
+PASS load multipliers 0.95 and 1.05 through platform preflight
+[1/3] scenario 1 completed_model
+[2/3] scenario 2 completed_model
+[3/3] scenario 3 completed_model
+PASS BUS_I 65 and 2 outages, direct BUS_I 2 loss of 20 MW, generator row 1 outage
+ACCFMLAB_EXTENDED_PASSED C:\Users\16422\.codex\.chatgpt-projects\g-p-6ad88f0eac2c81919cf0cc6096d551ce\work\ac-cfm-platform\runs\verification-final

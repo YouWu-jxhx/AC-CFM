@@ -1,0 +1,85 @@
+MATLAB=25.1.0.2943329 (R2025a) MATPOWER=8.1 IPOPT=0
+CORE=C:\Users\16422\.codex\.chatgpt-projects\g-p-6ad88f0eac2c81919cf0cc6096d551ce\tmp\ac-cfm-verified\accfm.m
+    0.4505    0.2097    0.0088    0.0461         0    0.1859   34.0000
+
+  列 1 至 16
+
+    {'EV'}    {'OL'}    {'XL'}    {'OL'}    {'ISL'}    {'ISL'}    {'ISL'}    {'ISL'}    {'ISL'}    {'UFLS'}    {'XL'}    {'UVLS'}    {'OL'}    {'ISL'}    {'ISL'}    {'ISL'}
+
+  列 17 至 25
+
+    {'ISL'}    {'OFGS'}    {'VC'}    {'OL'}    {'ISL'}    {'ISL'}    {'ISL'}    {'UFLS'}    {'OFGS'}
+
+39 ROW9=4-14 FINAL_PD=3436.53998927 BRTRIP=[1 3 4 5 6 7 9 13 16 17 18 19 20 21 22 23 24 26 30 31 40 41 42 43 44 45 46]
+MP case118 rates A,B,C:      0
+     0
+     0
+
+PGLIB an=1 nb=118 nl=186 ng=54 load=4242 QAminmax=72 7218 QAneqB=0 allBpositive=1
+pre Rmax 1.00000003, P range excess 0, Q range excess -2.76e-05, V excess -7.83e-09
+{此类型的变量不支持使用点进行索引。
+
+出错 runpf (第 171 行)
+        its = pf.mm.soln.output.iterations;
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_opf (第 871 行)
+        result = runpf(network, settings.mpopt);
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_vcls (第 760 行)
+    [network, Gnode_parent, opf_success] = apply_opf(network, network_disp, settings, Gnode_parent, i, k);
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 293 行)
+                    [network, Gnode_parent] = apply_vcls(network, settings, Gnode_parent, i, k);
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 190 行)
+            island = apply_recursion(island, settings, i, 0, Gnode_name);
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 589 行)
+                network = apply_recursion(network, settings, i + 1, k + 1, Gnode_parent);
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 589 行)
+                network = apply_recursion(network, settings, i + 1, k + 1, Gnode_parent);
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 190 行)
+            island = apply_recursion(island, settings, i, 0, Gnode_name);
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 589 行)
+                network = apply_recursion(network, settings, i + 1, k + 1, Gnode_parent);
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 589 行)
+                network = apply_recursion(network, settings, i + 1, k + 1, Gnode_parent);
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 190 行)
+            island = apply_recursion(island, settings, i, 0, Gnode_name);
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 589 行)
+                network = apply_recursion(network, settings, i + 1, k + 1, Gnode_parent);
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 190 行)
+            island = apply_recursion(island, settings, i, 0, Gnode_name);
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 589 行)
+                network = apply_recursion(network, settings, i + 1, k + 1, Gnode_parent);
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 589 行)
+                network = apply_recursion(network, settings, i + 1, k + 1, Gnode_parent);
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 589 行)
+                network = apply_recursion(network, settings, i + 1, k + 1, Gnode_parent);
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 589 行)
+                network = apply_recursion(network, settings, i + 1, k + 1, Gnode_parent);
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm>apply_recursion (第 190 行)
+            island = apply_recursion(island, settings, i, 0, Gnode_name);
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 accfm (第 85 行)
+    result_cascade = apply_recursion(network, settings);
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 probe_accfm (第 29 行)
+ r0=accfm(p,struct(),s); r1=accfm(p,struct('branches',9),s);
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+出错 run (第 112 行)
+evalin('caller', strcat(scriptStem, ';'));
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+} 

@@ -1,0 +1,4 @@
+scenario_id,seed,status,ls_total,lost_mw,initial_bus_lost_mw,ls_ufls,ls_uvls,ls_vcls,ls_opf,ls_other,n_off,n_secondary,n_ol,pf_count,elapsed_sec,has_opf_trip,has_solver_failure,error_id,error_message
+1,118701,completed_model,0.714328052674793,3030.17959944647,0,0.173525335206101,0.293519755907425,0.193661818606611,0,0.0536211429546566,97,93,26,96,17.2584,0,1,,
+2,118702,completed_model,0.00471475719000472,20,20,0,0,0,0,0,2,0,0,4,0.969041,0,0,,
+3,118703,completed_model,0,0,0,0,0,0,0,0,0,0,0,2,0.7204069,0,0,,

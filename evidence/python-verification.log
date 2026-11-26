@@ -1,0 +1,17 @@
+scenario_000001: completed_model, 7 events, 1 graph edges, lost MW=0
+scenario_000002: completed_model, 14 events, 2 graph edges, lost MW=0
+scenario_000003: completed_model, 300 events, 52 graph edges, lost MW=2352.2990057762418
+scenario_000004: completed_model, 300 events, 52 graph edges, lost MW=2352.2990743775526
+scenario_000001: completed_model, 7 events, 1 graph edges, lost MW=0
+scenario_000002: completed_model, 14 events, 2 graph edges, lost MW=0
+scenario_000003: completed_model, 300 events, 52 graph edges, lost MW=2352.2990057762418
+scenario_000004: completed_model, 300 events, 52 graph edges, lost MW=2352.2990743775526
+scenario_000001: completed_model, 7 events, 1 graph edges, lost MW=0
+scenario_000002: error, 0 events, 0 graph edges, lost MW=None
+scenario_000003: completed_model, 14 events, 2 graph edges, lost MW=0
+scenario_000001: iteration_limit, 16 events, 0 graph edges, lost MW=None
+scenario_000001: completed_model, 7 events, 1 graph edges, lost MW=0
+verified-row9: completed_model, 300 events, 52 graph edges, lost MW=2352.2990057762418
+scenario_000001: completed_model, 417 events, 58 graph edges, lost MW=3030.1795994464737
+scenario_000002: completed_model, 24 events, 4 graph edges, lost MW=20
+scenario_000003: completed_model, 14 events, 2 graph edges, lost MW=0
