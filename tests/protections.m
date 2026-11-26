@@ -5,6 +5,7 @@ function protections()
     restored = onCleanup(@() restore(oldRng,oldWarnings,oldPath)); %#ok<NASGU>
     real_small_network();
     real_action_cases();
+    real_verification_limit();
     controlled_cases();
     fprintf('ACCFMLAB_PROTECTIONS_PASSED %s\n',environment.matlab);
 end
@@ -346,6 +347,46 @@ end
 function success = verification_succeeded(events,stages)
     event = find(strcmp(stages,'verification_pf'),1);
     success = ~isempty(event) && events{event}.detail.success;
+end
+
+function real_verification_limit()
+% Force a genuine numerical return failure using a zero NR iteration budget.
+% The OPF still uses ordinary MIPS settings. No solver doubles are on path.
+    [PQ,~,~,NONE,~,BUS_TYPE,PD,~,~,~,~,~,~,~,~,~,VMIN] = idx_bus;
+    [~,~,~,~,~,~,~,GEN_STATUS,PMAX] = idx_gen;
+    input = fixture();
+    input.success = true;
+    input.bus(:,BUS_TYPE) = PQ;
+    input.bus(:,VMIN) = 0.2;
+    input.gen(1,PMAX) = 25;
+    input.gen(2,GEN_STATUS) = 0;
+    s = get_default_settings();
+    s.grid_forming = {};
+    s.mpopt = mpoption(s.mpopt,'exp.use_legacy_core',1,'opf.ac.solver','MIPS', ...
+        'pf.nr.max_it',0,'pf.tol',1e-13);
+    s.record_states = false;
+    s.observer = @collect;
+    journal = {};
+    rng(75,'twister');
+    actual = accfm_observed(input,struct(),s);
+    rng(75,'twister');
+    stock = accfm(input,struct(),rmfield(s,{'observer','record_states'}));
+    stages = cellfun(@(e) e.stage,journal,'UniformOutput',false);
+    solved = find(strcmp(stages,'recovery_opf_result'));
+    checked = find(strcmp(stages,'verification_pf'));
+    tripped = find(cellfun(@(e) strcmp(e.stage,'action') && strcmp(e.detail.type,'OPF'),journal));
+    assert(isscalar(solved) && isscalar(checked) && isscalar(tripped));
+    assert(solved<checked && checked<tripped && journal{solved}.detail.success && ...
+        ~journal{checked}.detail.success);
+    assert(strcmp(journal{tripped}.detail.reason,'verification_pf_failed'));
+    assert(isequal(journal{tripped}.detail.bus_rows,[1;2]) && nnz(actual.bus_uvls)>0);
+    assert(all(actual.bus(:,BUS_TYPE)==NONE) && sum(actual.bus(:,PD))==0 && actual.ls_opf==1);
+    assert(isequaln(actual.bus,stock.bus) && isequaln(actual.G.Edges,stock.G.Edges));
+    fprintf('PASS real MIPS success followed by real NR budget failure and island shutdown\n');
+
+    function collect(entry,~)
+        journal{end+1} = entry;
+    end
 end
 
 function net = fixture()

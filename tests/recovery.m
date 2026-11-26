@@ -93,6 +93,16 @@ function recovery(output)
     assert(any(strcmp(stages,'ac_pf_exception')) && strcmp(stages{end},'recovery_opf_exception'));
     assert(failed.summary.error_id=="ACCFMLabTest:OPF" && numel(failed.opf_networks)==1);
     fprintf('PASS solver exceptions retain a journal and distinct failure category\n');
+    clear restoreSolvers
+    fixtureDir = fullfile(fileparts(mfilename('fullpath')),'fixtures','observer_fault');
+    addpath(fixtureDir,'-begin');
+    restoreObserver = onCleanup(@() rmpath(fixtureDir)); %#ok<NASGU>
+    prepared = plan.prepared;
+    prepared.pre.observer_test = 'callback';
+    assert_error(@() simulate(prepared,scenarios(1)),'MATLAB:nonExistentField');
+    prepared.pre.observer_test = 'outside_solver';
+    assert_error(@() simulate(prepared,scenarios(1)),'ACCFMLab:UnexpectedModelException');
+    fprintf('PASS incomplete observer data and a program error inside the upstream broad catch are fatal\n');
     fprintf('ACCFMLAB_RECOVERY_PASSED %s\n',output);
 end
 

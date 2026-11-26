@@ -5,6 +5,7 @@ import csv
 import hashlib
 import json
 from collections import Counter
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
@@ -66,6 +67,10 @@ def verify_integrity(folder, require_plan=False):
         if (matches != [metadata["scenario"]] or plan["plan_sha256"] != ref["sha256"]
                 or plan["environment"]["case_sha256"] != metadata["case_sha256"]):
             raise ValueError("Scenario metadata disagrees with referenced experiment")
+        if metadata.get("observations_version", 1) >= 3:
+            for field in ("uvls_per_step", "uvls_max_steps"):
+                if plan["settings"][field] != metadata[field]:
+                    raise ValueError(f"Scenario {field} disagrees with the frozen plan")
 
 
 def ids(value):
@@ -93,7 +98,8 @@ def read_scenario(folder):
         for line in (folder / "events.jsonl").read_text(encoding="utf-8").splitlines()
     ]
     matrices = loadmat(folder / "numeric.mat")
-    edges = csv_rows(folder / "edges.csv") if metadata["result_available"] else []
+    graph_path = folder / "edges.csv"
+    edges = csv_rows(graph_path) if metadata["result_available"] or graph_path.is_file() else []
     return metadata, events, matrices, edges
 
 
@@ -178,9 +184,19 @@ def check_opf(events, data, columns):
         if stage in ("before_recovery_opf", "recovery_opf_result") and "opf_network_index" not in event:
             raise ValueError("Recovery OPF event is missing its snapshot")
         if stage == "recovery_opf_result" and event["detail"]["success"]:
-            if n + 2 >= len(events) or events[n + 1]["stage"] != "verification_pf_input" or (
-                    events[n + 2]["stage"] not in ("verification_pf", "verification_pf_exception")):
+            start = n + 1
+            if start < len(events) and events[start]["stage"] == "vcls_write":
+                start += 1
+            if start + 1 >= len(events) or events[start]["stage"] != "verification_pf_input" or (
+                    events[start + 1]["stage"] not in ("verification_pf", "verification_pf_exception")):
                 raise ValueError("Successful recovery OPF is missing its verification PF")
+            for related in events[n + 1:start + 2]:
+                if any(related[key] != event[key] for key in ("generation", "local_depth", "graph_parent")):
+                    raise ValueError("Recovery OPF verification changed island scope")
+        if stage == "before_recovery_opf":
+            following = events[n + 1]
+            if any(following[key] != event[key] for key in ("generation", "local_depth", "graph_parent")):
+                raise ValueError("Recovery OPF outcome changed island scope")
 
 
 def check_graph(events, edges):
@@ -199,9 +215,11 @@ def check_graph(events, edges):
         raise ValueError("Journal edges disagree with graph CSV")
 
 
-def check_actions(events, data, extended):
+def check_actions(events, data, extended, replay=False):
     names = ACTION_COLUMNS if extended else ("branch_tripped",)
     for name in names:
+        if replay and name in ("bus_uvls", "bus_ufls"):
+            continue
         kind, actions = ACTION_COLUMNS[name]
         actual = {(row + 1, generation + 1) for row, generation in zip(*np.nonzero(data[name]))}
         expected = set()
@@ -231,6 +249,8 @@ def check_actions(events, data, extended):
                 raise ValueError(f"Journal disagrees with {name}")
         elif actual != expected:
             raise ValueError(f"Journal disagrees with {name}")
+        if name.endswith("_tripped") and np.any((data[name] != 0) & (data[name] != 1)):
+            raise ValueError(f"Unexpected native flag value in {name}")
 
 
 def check_ledger(metadata, events, data, edges):
@@ -299,15 +319,17 @@ def check_initial(metadata, events, data):
         inferred = np.union1d(requested, np.flatnonzero(adjacent & (pre[:, status - 1] > 0)) + 1)
         np.testing.assert_array_equal(np.sort(ids(initial[native_key])), np.sort(requested))
         np.testing.assert_array_equal(np.sort(ids(initial[f"{kind}_rows"])), inferred)
-    if not events or events[0]["stage"] != "after_initial":
-        raise ValueError("Missing initial event")
-    np.testing.assert_array_equal(ids(events[0]["detail"]["branches"]), branches)
-    np.testing.assert_array_equal(ids(events[0]["detail"]["gens"]), gens)
+    initial_events = [n for n, event in enumerate(events) if event["stage"] == "after_initial"]
+    if len(initial_events) != 1:
+        raise ValueError("Missing or duplicate initial event")
+    snapshot = initial_events[0]
+    np.testing.assert_array_equal(ids(events[snapshot]["detail"]["branches"]), branches)
+    np.testing.assert_array_equal(ids(events[snapshot]["detail"]["gens"]), gens)
     if metadata["record_states"]:
         for kind, col, off_value in (
             ("bus", "bus_type", 4), ("branch", "branch_status", 0), ("gen", "gen_status", 0),
         ):
-            initial_matrix = data[f"state_{kind}"].flat[0]
+            initial_matrix = data[f"state_{kind}"].flat[snapshot]
             rows = ids(initial[f"{kind}_rows"])
             np.testing.assert_array_equal(initial_matrix[rows - 1, columns[col] - 1], off_value)
 
@@ -334,11 +356,187 @@ def check_outages(metadata, data):
             np.testing.assert_array_equal(np.sort(ids(ledger[key])), np.sort(expected))
 
 
-def validate(metadata, events, data, edges):
+def recovery_write(events, index, data, metadata):
+    """Validate the upstream rounded trigger and derive all VCLS replacements."""
+    event = events[index]
+    snapshot = data["opf_networks"].flat[event["opf_network_index"] - 1][0, 0]
+    gen = snapshot["gen"]
+    loads = gen[gen[:, 9] < 0]
+    values = loads[:, [1, 9]]
+    frac, integral = np.modf(np.abs(values))
+    rounded = np.copysign(integral + (frac >= 0.5), values)
+    triggered = np.any(rounded[:, 0] > rounded[:, 1])
+    following = events[index + 1]
+    if triggered != (following["stage"] == "vcls_write"):
+        raise ValueError("VCLS writeback disagrees with rounded OPF trigger")
+    if not triggered:
+        return None, None, 0.0
+    detail = following["detail"]
+    rows = ids(detail["bus_rows"])
+    local = np.isin(snapshot["bus"][:, 0], loads[:, 0])
+    np.testing.assert_array_equal(rows, ids(event["bus_rows"])[local])
+    demand = np.asarray(detail["prior_pd_mw"], dtype=float).reshape(-1)
+    np.testing.assert_allclose(demand, -loads[:, 9], rtol=0, atol=1e-6)
+    if metadata["record_states"]:
+        columns = metadata["columns_1based"]
+        state = data["state_bus"].flat[index + 1]
+        np.testing.assert_allclose(demand, state[local, columns["bus_pd"] - 1], rtol=0, atol=1e-6)
+    return rows, 1 + loads[:, 1] / demand, 1 - loads[:, 1].sum() / loads[:, 9].sum()
+
+
+def replay_observations(metadata, events, data, edges, nodes=None):
+    """Rebuild native action matrices and graph updates from observed inputs."""
+    terminal = metadata["result_available"]
+    uvls = np.zeros_like(data["bus_uvls"]) if terminal else None
+    ufls = np.zeros_like(data["bus_ufls"]) if terminal else None
+    expected_nodes = {}
+    expected_edges = {}
+    vc_fraction = 0.0
+    for index, event in enumerate(events):
+        stage, detail = event["stage"], event["detail"]
+        parent, generation = event["graph_parent"], event["generation"]
+        if stage == "recovery_opf_result" and detail["success"]:
+            rows, values, vc_fraction = recovery_write(events, index, data, metadata)
+            if terminal and rows is not None:
+                uvls[rows - 1, generation - 1] = values  # includes zero replacements
+        if not terminal:
+            continue
+        if stage == "graph_node":
+            if parent in expected_nodes:
+                raise ValueError("Repeated graph node creation")
+            values = [len(ids(event["bus_rows"])), detail["type"], detail["load_mw"],
+                      detail["generators"], detail["lines"]]
+            if metadata["record_states"] and detail["type"] != "failure":
+                columns = metadata["columns_1based"]
+                np.testing.assert_allclose(values[2], data["state_bus"].flat[index][
+                    :, columns["bus_pd"] - 1].sum(), rtol=0, atol=1e-6)
+                for offset, kind in ((3, "gen"), (4, "branch")):
+                    local = data[f"state_{kind}"].flat[index]
+                    status = columns[f"{kind}_status"] - 1
+                    actual = np.count_nonzero(local[:, status] == 1) if len(local) else 0
+                    if actual != values[offset]:
+                        raise ValueError("Graph node count disagrees with state")
+            expected_nodes[parent] = values
+        elif stage == "after_actions":
+            expected_nodes[parent][2] = detail["load_mw"]
+        elif stage == "graph_success":
+            expected_nodes[parent][1] = "success"
+        elif stage == "island_without_supply":
+            expected_nodes[parent][1:] = ["failure", 0, 0, 0]
+            # Native AC-CFM updates the LS column of outgoing edges of this node.
+            for key, records in expected_edges.items():
+                if key[0] == parent:
+                    for record in records:
+                        record[2] = detail["load_mw"]
+        elif stage in ("after_initial", "island_split"):
+            source = "root" if stage == "after_initial" else detail["source"]
+            action = "EV" if stage == "after_initial" else "ISL"
+            expected_edges.setdefault((source, parent, action), []).append([1, 1, np.nan])
+        elif stage == "action":
+            action = detail["type"]
+            loss = np.nan
+            if action == "UFLS":
+                weight, base = detail["fraction"], 1
+                ufls[ids(event["bus_rows"]) - 1, generation - 1] = weight
+                loss = weight * detail["load_before_mw"]
+            elif action == "UVLS":
+                rows = ids(detail["bus_rows"]) - 1
+                stepped = ids(detail["stepped_bus_rows"]) - 1
+                if not np.all(np.isin(stepped, rows)):
+                    raise ValueError("UVLS step rows fall outside the action")
+                dropped = np.setdiff1d(rows, stepped)
+                steps = np.count_nonzero(uvls, axis=1)
+                maximum, step = metadata["uvls_max_steps"], metadata["uvls_per_step"]
+                if np.any(steps[stepped] >= maximum) or np.any(steps[dropped] < maximum):
+                    raise ValueError("UVLS write disagrees with preceding nonzero history")
+                uvls[stepped, generation - 1] = step / (1 - step * steps[stepped])
+                uvls[dropped, generation - 1] = 1
+                weight, base = len(rows), len(ids(event["bus_rows"]))
+                loss = detail["load_before_mw"] - detail["load_after_mw"]
+            elif action in ("VC", "OPF"):
+                weight, base = vc_fraction if action == "VC" else 1, detail["load_before_mw"]
+                loss = weight * base
+            elif action == "SH":
+                weight = base = len(ids(detail["bus_rows"]))
+            elif action == "OFGS":
+                weight, base = 1, len(ids(event["gen_rows"]))  # scalar length(gens_to_shed)
+            else:
+                kind = {"XL": "gen", "ULGT": "gen", "OL": "branch"}[action]
+                key = f"{kind}_rows"
+                weight, base = len(ids(detail[key])), len(ids(event[key]))
+            expected_edges.setdefault((parent, detail["target"], action), []).append([weight, base, loss])
+
+    if not terminal:
+        return
+    for name, expected in (("bus_uvls", uvls), ("bus_ufls", ufls)):
+        np.testing.assert_array_equal(data[name] != 0, expected != 0, err_msg=name)
+        np.testing.assert_allclose(data[name], expected, rtol=0, atol=1e-14, err_msg=name)
+    actual_edges = {}
+    for edge in edges:
+        key = tuple(edge[field] for field in ("source", "target", "action"))
+        actual_edges.setdefault(key, []).append([float(edge[x]) if edge[x] else np.nan
+                                                  for x in ("weight", "base", "loss_mw")])
+    if actual_edges.keys() != expected_edges.keys():
+        raise ValueError("Graph edge keys disagree with replay")
+    for key, expected in expected_edges.items():
+        def ordered(records):
+            return sorted(records, key=lambda row: tuple(-np.inf if np.isnan(x) else x for x in row))
+        actual = np.array(ordered(actual_edges[key]))
+        expected = np.array(ordered(expected))
+        np.testing.assert_array_equal(actual.shape, expected.shape, err_msg=str(key))
+        np.testing.assert_allclose(actual[:, 0], expected[:, 0], rtol=0, atol=1e-14, err_msg=str(key))
+        np.testing.assert_allclose(actual[:, 1:], expected[:, 1:], rtol=0, atol=1e-6, err_msg=str(key))
+    if nodes is not None:
+        if len(nodes) != len(expected_nodes) or {row["Name"] for row in nodes} != expected_nodes.keys():
+            raise ValueError("Graph node keys disagree with replay")
+        for row in nodes:
+            buses, kind, load, gens, lines = expected_nodes[row["Name"]]
+            if row["Type"] != kind or [int(row[x]) for x in ("Buses", "Generators", "Lines")] != [buses, gens, lines]:
+                raise ValueError(f"Node attributes disagree for {row['Name']}")
+            np.testing.assert_allclose(float(row["Load"]), load, rtol=0, atol=1e-6)
+
+
+def check_status(metadata, events):
+    summary = metadata["summary"]
+    category = metadata["error_category"]
+    available = metadata["result_available"]
+    expected = {
+        "completed_model": (True, ""), "model_opf_trip": (True, ""),
+        "review_ledger": (True, "ledger"), "iteration_limit": (False, "recursion_limit"),
+        "error": (False, "input"), "solver_error": (False, "solver_exception"),
+    }
+    if expected.get(summary["status"]) != (available, category):
+        raise ValueError("Scenario outcome disagrees with error category or terminal availability")
+    solver_events = {"ac_pf", "verification_pf", "recovery_opf_result", "ac_pf_exception",
+                     "verification_pf_exception", "recovery_opf_exception"}
+    failed = any(event["stage"] in solver_events and not event["detail"]["success"] for event in events)
+    if failed != summary["has_solver_failure"]:
+        raise ValueError("Solver failure summary disagrees with journal")
+    opf_trip = available and any(event["stage"] == "action" and event["detail"]["type"] == "OPF"
+                                 for event in events)
+    if opf_trip != summary["has_opf_trip"] or (
+        available and summary["status"] != "review_ledger"
+        and opf_trip != (summary["status"] == "model_opf_trip")
+    ):
+        raise ValueError("OPF trip status disagrees with journal")
+    if category == "solver_exception" and (
+        not events or not events[-1]["stage"].endswith("_exception")
+        or events[-1]["detail"]["identifier"] != summary["error_id"]
+    ):
+        raise ValueError("Solver exception outcome is missing the corresponding call failure")
+
+
+def validate(metadata, events, data, edges, nodes=None):
     check_events(metadata, events, data)
     extended = metadata.get("observations_version", 1) >= 2
     if extended:
         check_opf(events, data, metadata["columns_1based"])
+    replay = metadata.get("observations_version", 1) >= 3
+    if replay:
+        check_status(metadata, events)
+        replay_observations(metadata, events, data, edges, nodes)
+        if not metadata["result_available"] and (edges or nodes):
+            raise ValueError("A scenario without a result must not export a graph")
     if not metadata["result_available"]:
         return
     for kind, columns in IDENTITY.items():
@@ -347,8 +545,9 @@ def validate(metadata, events, data, edges):
         np.testing.assert_array_equal(data[f"{kind}_id"].ravel(), expected)
         check_identity(data[kind], pre, expected, columns)
     check_initial(metadata, events, data)
-    check_actions(events, data, extended)
-    check_graph(events, edges)
+    check_actions(events, data, extended, replay)
+    if not replay:
+        check_graph(events, edges)
     check_ledger(metadata, events, data, edges)
     check_outages(metadata, data)
 
@@ -361,6 +560,26 @@ def compare_numeric(saved, exported):
     left, right = np.asarray(saved), np.asarray(exported)
     if left.size or right.size:
         np.testing.assert_array_equal(left.squeeze(), right.squeeze())
+
+
+def compare_detail(saved, json_detail, field):
+    if isinstance(json_detail, dict):
+        if not isinstance(saved, dict) or saved.keys() != json_detail.keys():
+            raise ValueError(f"Structure differs between record.mat and JSON in {field}")
+        for key, value in json_detail.items():
+            compare_detail(saved[key], value, f"{field}.{key}")
+    elif isinstance(json_detail, str):
+        if json_detail == "" and np.asarray(saved).size == 0:
+            return
+        if not isinstance(saved, str) or saved != json_detail:
+            raise ValueError(f"Text differs between record.mat and JSON in {field}")
+    elif json_detail == [] and np.asarray(saved).size == 0:
+        return
+    else:
+        expected = np.asarray(json_detail, dtype=float)
+        actual = np.asarray(saved, dtype=float)
+        np.testing.assert_allclose(actual.squeeze(), expected.squeeze(),
+                                   rtol=1e-15, atol=0, err_msg=field)
 
 
 def check_record_exports(record, metadata, events, data):
@@ -381,7 +600,11 @@ def check_record_exports(record, metadata, events, data):
         for kind in IDENTITY:
             field = f"{kind}_rows"
             np.testing.assert_array_equal(ids(source[field]), ids(exported[field]))
-        if exported["stage"] == "action":
+        if metadata.get("observations_version", 1) >= 3:
+            compare_detail(source["detail"], exported["detail"], f"event {exported['sequence']}")
+            if source.get("opf_network_index") != exported.get("opf_network_index"):
+                raise ValueError("record.mat and JSONL disagree on OPF snapshot index")
+        elif exported["stage"] == "action":
             for field in ("type", "target"):
                 if source["detail"][field] != exported["detail"][field]:
                     raise ValueError(f"record.mat and JSONL disagree on action {field}")
@@ -402,24 +625,45 @@ def check_record_exports(record, metadata, events, data):
                 compare_numeric(snapshot[field], export[0, 0][field])
 
 
+@lru_cache(maxsize=4)
+def read_prepared_plan(path, digest):
+    # The caller checked the digest. It also keys the cache when a path is reused.
+    return loadmat(path, variable_names=["prepared"], simplify_cells=True)["prepared"]
+
+
 def validate_folder(folder, require_plan=False):
     folder = Path(folder)
     verify_integrity(folder, require_plan)
     metadata, events, data, edges = read_scenario(folder)
-    validate(metadata, events, data, edges)
+    has_result = metadata["result_available"]
+    nodes_path = folder / "nodes.csv"
+    nodes = csv_rows(nodes_path) if has_result or nodes_path.is_file() else []
+    validate(metadata, events, data, edges, nodes)
+    if metadata.get("observations_version", 1) >= 3:
+        plan_path = folder.parent / "plan.mat"
+        if plan_path.is_file():
+            prepared = read_prepared_plan(plan_path, metadata["plan"]["sha256"])
+            for kind in IDENTITY:
+                compare_numeric(prepared["pre"][kind], data[f"pre_{kind}"])
+            compare_numeric(prepared["pre"]["baseMVA"], metadata["base_mva"])
+            for field in ("record_states", "load_scale"):
+                compare_numeric(prepared["config"][field], metadata[field])
     saved = loadmat(folder / "record.mat", variable_names=["record"], simplify_cells=True)["record"]
     if (saved["scenario"]["id"], saved["scenario"]["seed"]) != (
         metadata["scenario"]["id"], metadata["scenario"]["seed"]
     ):
         raise ValueError("record.mat scenario disagrees with metadata")
     check_record_exports(saved, metadata, events, data)
+    if metadata.get("observations_version", 1) >= 3:
+        compare_detail(saved["error_category"], metadata["error_category"], "error_category")
+        if has_result:
+            compare_detail(saved["ledger"], metadata["ledger"], "ledger")
     error_category = metadata.get("error_category", "")
     if error_category != "input":
         for key in ("bus_numbers", "branch_rows", "gen_rows"):
             np.testing.assert_array_equal(ids(saved["scenario"]["fault"][key]),
                                           ids(metadata["scenario"]["fault"][key]))
-    if metadata["result_available"]:
-        nodes = csv_rows(folder / "nodes.csv")
+    if has_result:
         names = {node["Name"] for node in nodes}
         endpoints = {edge[key] for edge in edges for key in ("source", "target")}
         if len(names) != len(nodes) or names != endpoints:

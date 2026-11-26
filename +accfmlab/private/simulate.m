@@ -149,6 +149,11 @@ function record = simulate(prepared, scenario)
             return
         end
         try
+            if strcmp(entry.stage,'pf_exception') && ~is_solver_exception(recorded,entry.detail)
+                error('ACCFMLab:UnexpectedModelException', ...
+                    'Unexpected exception outside a solver call [%s]: %s', ...
+                    entry.detail.identifier,entry.detail.message);
+            end
             entry.sequence = numel(recorded)+1;
             entry.bus_rows = state.bus_rows;
             entry.gen_rows = state.gen_rows;

@@ -68,6 +68,7 @@ function result_cascade = accfm_observed(network, initial_contingency, settings)
     % initialise cascade graph
     network.G = digraph();
     network.G = addnode(network.G, table({'root'}, size(network.bus, 1), {'root'}, load_initial, length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+    observe_node(settings, network, 0, 0, 'root', 'root');
     
     % apply initial contingency
     network.bus(initial_contingency.buses, BUS_TYPE) = NONE;
@@ -75,6 +76,7 @@ function result_cascade = accfm_observed(network, initial_contingency, settings)
     network.gen(initial_contingency.gens, GEN_STATUS) = 0;
     
     network.G = addnode(network.G, table({'event'}, size(network.bus, 1), {'event'}, load_initial, length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+    observe_node(settings, network, 0, 0, 'event', 'event');
     network.G = addedge(network.G, table({'root' 'event'}, {'EV'}, 1, 1, NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
     
     observe(settings, 'after_initial', network, 0, 0, 'event', initial_contingency);
@@ -185,6 +187,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
             
             Gnode_name = get_hash();
             network.G = addnode(network.G, table({Gnode_name}, size(island.bus, 1), {''}, sum(island.bus(:, PD)), length(find(island.gen(:, GEN_STATUS) == 1)), length(find(island.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+            observe_node(settings, island, i, k, Gnode_name, '');
             network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'ISL'}, 1, 1, NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
             island.G = network.G;
             
@@ -360,8 +363,9 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                         
                         Gnode_name = get_hash();
                         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+                        observe_node(settings, network, i, k, Gnode_name, '');
                         network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'UFLS'}, (1 - ls_factor), 1, (1 - ls_factor) * sum_d, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-                        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'UFLS', 'target', Gnode_name, 'bus_rows', ufls_bus_rows, 'load_before_mw', sum_d, 'load_after_mw', sum(network.bus(:, PD))));
+                        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'UFLS', 'target', Gnode_name, 'bus_rows', ufls_bus_rows, 'load_before_mw', sum_d, 'fraction', 1-ls_factor, 'load_after_mw', sum(network.bus(:, PD))));
                         Gnode_parent = Gnode_name;
                     end
 
@@ -413,6 +417,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                         
                         Gnode_name = get_hash();
                         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+                        observe_node(settings, network, i, k, Gnode_name, '');
                         network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'OFGS'}, length(gens_to_shed), size(network.gen, 1), NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
                         observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OFGS', 'target', Gnode_name, 'gen_rows', network.gen_id(ind(1:gens_to_shed)), 'load_after_mw', sum(network.bus(:, PD))));
                         Gnode_parent = Gnode_name;
@@ -466,6 +471,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                     if isempty(Gnode_name)
                         Gnode_name = get_hash();
                         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+                        observe_node(settings, network, i, k, Gnode_name, '');
                     end
                     network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'XL'}, length(exceeded_gens_q), size(network.gen, 1), NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
                     observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'XL', 'target', Gnode_name, 'gen_rows', network.gen_id(exceeded_gens_q), 'load_before_mw', xl_load_before, 'load_after_mw', sum(network.bus(:, PD))));
@@ -497,6 +503,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                     if isempty(Gnode_name)
                         Gnode_name = get_hash();
                         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+                        observe_node(settings, network, i, k, Gnode_name, '');
                     end
                     network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'ULGT'}, length(exceeded_gens_p), size(network.gen, 1), NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
                     observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'ULGT', 'target', Gnode_name, 'gen_rows', network.gen_id(exceeded_gens_p), 'load_after_mw', sum(network.bus(:, PD))));
@@ -557,9 +564,10 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                         if isempty(Gnode_name)
                             Gnode_name = get_hash();
                             network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+                            observe_node(settings, network, i, k, Gnode_name, '');
                         end
                         network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'UVLS'}, length(buses_uvls_apply) + length(buses_uvls_exceeded), size(network.bus, 1), load_initial - sum(network.bus(:, PD)), 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-                        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'UVLS', 'target', Gnode_name, 'bus_rows', network.bus_id([buses_uvls_apply(:); buses_uvls_exceeded(:)]), 'load_before_mw', load_initial, 'load_after_mw', sum(network.bus(:, PD))));
+                        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'UVLS', 'target', Gnode_name, 'bus_rows', network.bus_id([buses_uvls_apply(:); buses_uvls_exceeded(:)]), 'stepped_bus_rows', network.bus_id(buses_uvls_apply), 'load_before_mw', load_initial, 'load_after_mw', sum(network.bus(:, PD))));
                     end
                 end
                 
@@ -582,6 +590,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                     if isempty(Gnode_name)
                         Gnode_name = get_hash();
                         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+                        observe_node(settings, network, i, k, Gnode_name, '');
                     end
                     network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'OL'}, length(exceeded_lines), size(network.branch, 1), NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
                     observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OL', 'target', Gnode_name, 'branch_rows', network.branch_id(exceeded_lines), 'load_after_mw', sum(network.bus(:, PD))));
@@ -601,7 +610,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
             network.load(i) = sum(network.bus(:, PD));
             network.G.Nodes.Load(findnode(network.G, Gnode_parent)) = sum(network.bus(:, PD));
             
-            observe(settings, 'after_actions', network, i, k, Gnode_parent, struct());
+            observe(settings, 'after_actions', network, i, k, Gnode_parent, struct('load_mw', sum(network.bus(:, PD))));
             % cascade continues
             if sum(network.bus(:, PD)) > 0 && (conditions_changed || ~isempty(exceeded_lines) || ~isempty(exceeded_buses) || ~isempty(exceeded_gens_p) || ~isempty(exceeded_gens_q))
                 % INDUCTION CASE
@@ -614,6 +623,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                 
                 if network.success == 1
                     network.G.Nodes.Type(findnode(network.G, Gnode_parent)) = {'success'};
+                    observe(settings, 'graph_success', network, i, k, Gnode_parent, struct());
                 end
             end
         end
@@ -814,6 +824,7 @@ function [network, Gnode_parent] = apply_vcls(network, settings, Gnode_parent, i
             
             Gnode_name = get_hash();
             network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+            observe_node(settings, network, i, k, Gnode_name, '');
             network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'SH'}, shunt_devices, shunt_devices, NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
             observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'SH', 'target', Gnode_name, 'bus_rows', shunt_bus_rows, 'load_after_mw', sum(network.bus(:, PD))));
             Gnode_parent = Gnode_name;
@@ -834,6 +845,7 @@ function [network, Gnode_parent] = apply_vcls(network, settings, Gnode_parent, i
 
         Gnode_name = get_hash();
         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {'failure'}, 0, 0, 0, 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+        observe_node(settings, network, i, k, Gnode_name, 'failure');
         network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'OPF'}, 1, load_initial, load_initial, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
         observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OPF', 'target', Gnode_name, 'bus_rows', network.bus_id, 'reason', opf_trip_reason, 'load_before_mw', load_initial, 'load_after_mw', sum(network.bus(:, PD))));
         Gnode_parent = Gnode_name;
@@ -872,6 +884,7 @@ function [network, Gnode_parent, opf_success] = apply_opf(network, network_disp,
             % apply VCLS
             ls = 1 - sum(-results_disp.gen(results_disp.gen(:, PMIN) < 0, PG)) / sum(-results_disp.gen(results_disp.gen(:, PMIN) < 0, PMIN));
 
+            observe(settings, 'vcls_write', network, i, k, Gnode_parent, vcls_write_detail(network, results_disp, BUS_I, GEN_BUS, PMIN, PD));
             network.bus_uvls(ismember(network.bus(:, BUS_I), results_disp.gen(results_disp.gen(:, PMIN) < 0, GEN_BUS)), i) = 1 + results_disp.gen(results_disp.gen(:, PMIN) < 0, PG) ./ network.bus(ismember(network.bus(:, BUS_I), results_disp.gen(results_disp.gen(:, PMIN) < 0, GEN_BUS)), PD);
 
             network.bus(ismember(network.bus(:, BUS_I), results_disp.gen(results_disp.gen(:, PMIN) < 0, GEN_BUS)), PD) = -results_disp.gen(results_disp.gen(:, PMIN) < 0, PG);
@@ -905,6 +918,7 @@ function [network, Gnode_parent, opf_success] = apply_opf(network, network_disp,
 
             Gnode_name = get_hash();
             network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+            observe_node(settings, network, i, k, Gnode_name, '');
             network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'VC'}, ls, load_initial, ls * load_initial, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
             observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'VC', 'target', Gnode_name, 'bus_rows', network.bus_id(ismember(network.bus(:, BUS_I), shed_bus_numbers)), 'load_before_mw', load_initial, 'load_after_mw', sum(network.bus(:, PD))));
             Gnode_parent = Gnode_name;
@@ -922,6 +936,7 @@ function [network, Gnode_parent, opf_success] = apply_opf(network, network_disp,
 
             Gnode_name = get_hash();
             network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {'failure'}, 0, 0, 0, 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
+            observe_node(settings, network, i, k, Gnode_name, 'failure');
             network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'OPF'}, 1, load_initial, load_initial, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
             observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OPF', 'target', Gnode_name, 'bus_rows', network.bus_id, 'reason', opf_trip_reason, 'load_before_mw', load_initial, 'load_after_mw', sum(network.bus(:, PD))));
             Gnode_parent = Gnode_name;
@@ -1044,6 +1059,28 @@ function result = observed_opf(network_disp, options, settings, island, i, k, pa
     detail.dispatchable_served_mw = -sum(result.gen(loads, PG));
     detail.dispatchable_shed_mw = detail.dispatchable_demand_mw - detail.dispatchable_served_mw;
     observe(settings, 'recovery_opf_result', island, i, k, parent, detail, result);
+end
+
+function detail = vcls_write_detail(network, dispatch, busCol, genBusCol, pminCol, pdCol)
+    local = ismember(network.bus(:,busCol), dispatch.gen(dispatch.gen(:,pminCol)<0,genBusCol));
+    detail = struct('bus_rows',network.bus_id(local),'prior_pd_mw',network.bus(local,pdCol));
+end
+
+function observe_node(settings, network, i, k, node, kind)
+    if ~isfield(settings, 'observer')
+        return
+    end
+    [~,~,~,~,~,~,PD] = idx_bus;
+    [~,~,~,~,~,~,~,GEN_STATUS] = idx_gen;
+    [~,~,~,~,~,~,~,~,~,~,BR_STATUS] = idx_brch;
+    detail = struct('type',kind,'load_mw',sum(network.bus(:,PD)), ...
+        'generators',nnz(network.gen(:,GEN_STATUS)==1),'lines',nnz(network.branch(:,BR_STATUS)==1));
+    if strcmp(kind,'failure')
+        detail.load_mw = 0;
+        detail.generators = 0;
+        detail.lines = 0;
+    end
+    observe(settings, 'graph_node', network, i, k, node, detail);
 end
 
 function observe(settings, stage, network, i, k, parent, detail, dispatch)

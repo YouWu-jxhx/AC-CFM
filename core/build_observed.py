@@ -76,7 +76,9 @@ def build_source(source):
     before("                %% O/UXL", "                " + observe("before_limit_actions", detail=(
         "struct('branch_rows', network.branch_id(exceeded_lines), 'bus_rows', network.bus_id(exceeded_buses), "
         "'low_p_gen_rows', network.gen_id(exceeded_gens_p), 'xl_gen_rows', network.gen_id(exceeded_gens_q))")))
-    before("            % cascade continues", "            " + observe("after_actions"))
+    before("            % cascade continues", "            " + observe("after_actions", detail="struct('load_mw', sum(network.bus(:, PD)))"))
+    after("                    network.G.Nodes.Type(findnode(network.G, Gnode_parent)) = {'success'};",
+          "                    " + observe("graph_success"))
     replace("            network.bus_tripped(:, i) = 1;\n            \n            if settings.verbose",
             "            network.bus_tripped(:, i) = 1;\n            " +
             observe("island_deenergized") + "\n\n            if settings.verbose")
@@ -84,11 +86,12 @@ def build_source(source):
     # Record each original graph edge at creation, so it keeps the model's
     # processing order and its island scope, including parallel edges.
     details = {
-        "UFLS": "'bus_rows', ufls_bus_rows, 'load_before_mw', sum_d",
+        "UFLS": "'bus_rows', ufls_bus_rows, 'load_before_mw', sum_d, 'fraction', 1-ls_factor",
         "OFGS": "'gen_rows', network.gen_id(ind(1:gens_to_shed))",
         "XL": "'gen_rows', network.gen_id(exceeded_gens_q), 'load_before_mw', xl_load_before",
         "ULGT": "'gen_rows', network.gen_id(exceeded_gens_p)",
-        "UVLS": "'bus_rows', network.bus_id([buses_uvls_apply(:); buses_uvls_exceeded(:)]), 'load_before_mw', load_initial",
+        "UVLS": ("'bus_rows', network.bus_id([buses_uvls_apply(:); buses_uvls_exceeded(:)]), "
+                 "'stepped_bus_rows', network.bus_id(buses_uvls_apply), 'load_before_mw', load_initial"),
         "OL": "'branch_rows', network.branch_id(exceeded_lines)",
         "SH": "'bus_rows', shunt_bus_rows",
         "VC": "'bus_rows', network.bus_id(ismember(network.bus(:, BUS_I), shed_bus_numbers)), 'load_before_mw', load_initial",
@@ -102,6 +105,9 @@ def build_source(source):
     before("                        network.bus(:, [PD QD]) = ls_factor * network.bus(:, [PD QD]);\n                        network.bus_ufls(:, i)",
            "                        ufls_bus_rows = network.bus_id(any(network.bus(:, [PD QD]) ~= 0, 2));")
     before("                    % O/UXL", "                    xl_load_before = sum(network.bus(:, PD));")
+    before("            network.bus_uvls(ismember(network.bus(:, BUS_I), results_disp.gen",
+           "            " + observe("vcls_write", detail=(
+               "vcls_write_detail(network, results_disp, BUS_I, GEN_BUS, PMIN, PD)")))
     before("        results_disp.gen(results_disp.gen(:, PMIN) < 0, :) = [];", """        shed_bus_numbers = [];
         if ~isempty(loads_shed)
             dispatchable = results_disp.gen(:, PMIN) < 0;
@@ -112,6 +118,7 @@ def build_source(source):
     expected_actions["OPF"] = 2
     seen_actions = dict.fromkeys(details, 0)
     pf_calls = 0
+    node_calls = 0
     output = []
     for line in source.splitlines():
         if " = runpf(network, settings.mpopt);" in line:
@@ -120,14 +127,27 @@ def build_source(source):
             label = "verification_pf" if lhs == "result" else "ac_pf"
             line = line.replace("runpf(network, settings.mpopt)", f"observed_pf(network, settings, i, k, Gnode_parent, '{label}')")
         output.append(line)
+        if " = addnode(" in line:
+            node_calls += 1
+            indent = " " * (len(line) - len(line.lstrip()))
+            if "size(island.bus" in line:
+                net, node, generation, depth, kind = "island", "Gnode_name", "i", "k", "''"
+            elif "size(network.bus" in line and "{'root'}" in line:
+                net, node, generation, depth, kind = "network", "'root'", "0", "0", "'root'"
+            elif "size(network.bus" in line and "{'event'}" in line:
+                net, node, generation, depth, kind = "network", "'event'", "0", "0", "'event'"
+            else:
+                net, node, generation, depth = "network", "Gnode_name", "i", "k"
+                kind = "'failure'" if "{'failure'}" in line else "''"
+            output.append(indent + f"observe_node(settings, {net}, {generation}, {depth}, {node}, {kind});")
         for action, ids in details.items():
             if "addedge(" in line and "{'" + action + "'}" in line:
                 seen_actions[action] += 1
                 output.append(" " * (len(line) - len(line.lstrip())) + observe(
                     "action", detail=(f"struct('type', '{action}', 'target', Gnode_name, {ids}, "
                                       "'load_after_mw', sum(network.bus(:, PD)))")))
-    if pf_calls != 6 or seen_actions != expected_actions:
-        raise ValueError(f"Unexpected instrumentation counts: {pf_calls} PF calls, {seen_actions}")
+    if pf_calls != 6 or node_calls != 13 or seen_actions != expected_actions:
+        raise ValueError(f"Unexpected instrumentation counts: {pf_calls} PF calls, {node_calls} nodes, {seen_actions}")
     source = "\n".join(output) + "\n"
 
     replace("results_disp = runopf(network_disp, mpoption(settings.mpopt, 'opf.ac.solver', 'IPOPT'));",
@@ -180,6 +200,28 @@ function result = observed_opf(network_disp, options, settings, island, i, k, pa
     detail.dispatchable_served_mw = -sum(result.gen(loads, PG));
     detail.dispatchable_shed_mw = detail.dispatchable_demand_mw - detail.dispatchable_served_mw;
     observe(settings, 'recovery_opf_result', island, i, k, parent, detail, result);
+end
+
+function detail = vcls_write_detail(network, dispatch, busCol, genBusCol, pminCol, pdCol)
+    local = ismember(network.bus(:,busCol), dispatch.gen(dispatch.gen(:,pminCol)<0,genBusCol));
+    detail = struct('bus_rows',network.bus_id(local),'prior_pd_mw',network.bus(local,pdCol));
+end
+
+function observe_node(settings, network, i, k, node, kind)
+    if ~isfield(settings, 'observer')
+        return
+    end
+    [~,~,~,~,~,~,PD] = idx_bus;
+    [~,~,~,~,~,~,~,GEN_STATUS] = idx_gen;
+    [~,~,~,~,~,~,~,~,~,~,BR_STATUS] = idx_brch;
+    detail = struct('type',kind,'load_mw',sum(network.bus(:,PD)), ...
+        'generators',nnz(network.gen(:,GEN_STATUS)==1),'lines',nnz(network.branch(:,BR_STATUS)==1));
+    if strcmp(kind,'failure')
+        detail.load_mw = 0;
+        detail.generators = 0;
+        detail.lines = 0;
+    end
+    observe(settings, 'graph_node', network, i, k, node, detail);
 end
 
 function observe(settings, stage, network, i, k, parent, detail, dispatch)
