@@ -58,15 +58,15 @@ replace("            network.bus_tripped(:, i) = 1;\n            \n            i
 # Record each original graph edge at creation, so it keeps the model's
 # processing order and its island scope, including parallel edges.
 details = {
-    "UFLS": "'bus_rows', ufls_bus_rows",
+    "UFLS": "'bus_rows', ufls_bus_rows, 'load_before_mw', sum_d",
     "OFGS": "'gen_rows', network.gen_id(ind(1:gens_to_shed))",
-    "XL": "'gen_rows', network.gen_id(exceeded_gens_q)",
+    "XL": "'gen_rows', network.gen_id(exceeded_gens_q), 'load_before_mw', xl_load_before",
     "ULGT": "'gen_rows', network.gen_id(exceeded_gens_p)",
-    "UVLS": "'bus_rows', network.bus_id([buses_uvls_apply(:); buses_uvls_exceeded(:)])",
+    "UVLS": "'bus_rows', network.bus_id([buses_uvls_apply(:); buses_uvls_exceeded(:)]), 'load_before_mw', load_initial",
     "OL": "'branch_rows', network.branch_id(exceeded_lines)",
     "SH": "'bus_rows', shunt_bus_rows",
-    "VC": "'bus_rows', network.bus_id(ismember(network.bus(:, BUS_I), shed_bus_numbers))",
-    "OPF": "'bus_rows', network.bus_id, 'reason', opf_trip_reason",
+    "VC": "'bus_rows', network.bus_id(ismember(network.bus(:, BUS_I), shed_bus_numbers)), 'load_before_mw', load_initial",
+    "OPF": "'bus_rows', network.bus_id, 'reason', opf_trip_reason, 'load_before_mw', load_initial",
 }
 before("        network = trip_nodes(network, network.bus(:, BUS_I));\n        network.bus_tripped(:, i) = 1;",
        "        opf_trip_reason = 'recovery_attempts_exhausted';")
@@ -75,7 +75,13 @@ before("            network = trip_nodes(network, network.bus(:, BUS_I));\n     
 before("            shunt_devices = length(find(network.bus(:, BS)));", "            shunt_bus_rows = network.bus_id(network.bus(:, BS) ~= 0);")
 before("                        network.bus(:, [PD QD]) = ls_factor * network.bus(:, [PD QD]);\n                        network.bus_ufls(:, i)",
        "                        ufls_bus_rows = network.bus_id(any(network.bus(:, [PD QD]) ~= 0, 2));")
-before("        results_disp.gen(results_disp.gen(:, PMIN) < 0, :) = [];", "        shed_bus_numbers = results_disp.gen(loads_shed, GEN_BUS);")
+before("                    % O/UXL", "                    xl_load_before = sum(network.bus(:, PD));")
+before("        results_disp.gen(results_disp.gen(:, PMIN) < 0, :) = [];", """        shed_bus_numbers = [];
+        if ~isempty(loads_shed)
+            dispatchable = results_disp.gen(:, PMIN) < 0;
+            changed = dispatchable & (abs(results_disp.gen(:, PG) - results_disp.gen(:, PMIN)) > 1e-6);
+            shed_bus_numbers = results_disp.gen(changed, GEN_BUS);
+        end""")
 output = []
 for line in source.splitlines():
     if " = runpf(network, settings.mpopt);" in line:
@@ -86,12 +92,14 @@ for line in source.splitlines():
     for action, ids in details.items():
         if "addedge(" in line and "{'" + action + "'}" in line:
             output.append(" " * (len(line) - len(line.lstrip())) + observe(
-                "action", detail=f"struct('type', '{action}', 'target', Gnode_name, {ids})"))
+                "action", detail=(f"struct('type', '{action}', 'target', Gnode_name, {ids}, "
+                                  "'load_after_mw', sum(network.bus(:, PD)))")))
 source = "\n".join(output) + "\n"
 
-before("    % use a faster OPF solver if available", "    " + observe("before_recovery_opf"))
-after("    opf_success = results_disp.success;", "    " + observe(
-    "recovery_opf_result", detail="struct('success', logical(opf_success))"))
+replace("results_disp = runopf(network_disp, mpoption(settings.mpopt, 'opf.ac.solver', 'IPOPT'));",
+        "results_disp = observed_opf(network_disp, mpoption(settings.mpopt, 'opf.ac.solver', 'IPOPT'), settings, network, i, k, Gnode_parent);")
+replace("results_disp = runopf(network_disp, settings.mpopt);",
+        "results_disp = observed_opf(network_disp, settings.mpopt, settings, network, i, k, Gnode_parent);")
 
 source += """
 function result = observed_pf(network, settings, i, k, parent, stage)
@@ -100,7 +108,35 @@ function result = observed_pf(network, settings, i, k, parent, stage)
     observe(settings, stage, result, i, k, parent, struct('success', logical(result.success)));
 end
 
-function observe(settings, stage, network, i, k, parent, detail)
+function result = observed_opf(network_disp, options, settings, island, i, k, parent)
+    observe(settings, 'before_recovery_opf', island, i, k, parent, ...
+        struct('solver', options.opf.ac.solver), network_disp);
+    result = runopf(network_disp, options);
+    if ~isfield(settings, 'observer')
+        return
+    end
+    define_constants;
+    detail = struct('success', logical(result.success), 'solver', options.opf.ac.solver, ...
+        'objective', result.f);
+    if isfield(result, 'raw') && isfield(result.raw, 'info')
+        detail.exit_code = result.raw.info;
+    end
+    if isfield(result, 'raw') && isfield(result.raw, 'output')
+        for field = {'iterations', 'message', 'alg'}
+            key = field{1};
+            if isfield(result.raw.output, key)
+                detail.(key) = result.raw.output.(key);
+            end
+        end
+    end
+    loads = isload(network_disp.gen);
+    detail.dispatchable_demand_mw = -sum(network_disp.gen(loads, PMIN));
+    detail.dispatchable_served_mw = -sum(result.gen(loads, PG));
+    detail.dispatchable_shed_mw = detail.dispatchable_demand_mw - detail.dispatchable_served_mw;
+    observe(settings, 'recovery_opf_result', island, i, k, parent, detail, result);
+end
+
+function observe(settings, stage, network, i, k, parent, detail, dispatch)
     if ~isfield(settings, 'observer')
         return
     end
@@ -112,6 +148,13 @@ function observe(settings, stage, network, i, k, parent, detail)
         state.bus = network.bus;
         state.gen = network.gen;
         state.branch = network.branch;
+    end
+    if nargin == 8
+        % load2disp appends artificial generators in external bus order.
+        extra = size(dispatch.gen,1) - numel(network.gen_id);
+        state.opf_network = struct('baseMVA', dispatch.baseMVA, 'bus', dispatch.bus, ...
+            'gen', dispatch.gen, 'branch', dispatch.branch, 'gencost', dispatch.gencost, ...
+            'gen_rows', [network.gen_id; zeros(extra,1)]);
     end
     settings.observer(entry, state);
 end

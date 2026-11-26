@@ -361,7 +361,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                         Gnode_name = get_hash();
                         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
                         network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'UFLS'}, (1 - ls_factor), 1, (1 - ls_factor) * sum_d, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-                        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'UFLS', 'target', Gnode_name, 'bus_rows', ufls_bus_rows));
+                        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'UFLS', 'target', Gnode_name, 'bus_rows', ufls_bus_rows, 'load_before_mw', sum_d, 'load_after_mw', sum(network.bus(:, PD))));
                         Gnode_parent = Gnode_name;
                     end
 
@@ -414,7 +414,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                         Gnode_name = get_hash();
                         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
                         network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'OFGS'}, length(gens_to_shed), size(network.gen, 1), NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-                        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OFGS', 'target', Gnode_name, 'gen_rows', network.gen_id(ind(1:gens_to_shed))));
+                        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OFGS', 'target', Gnode_name, 'gen_rows', network.gen_id(ind(1:gens_to_shed)), 'load_after_mw', sum(network.bus(:, PD))));
                         Gnode_parent = Gnode_name;
                     end
                 end
@@ -436,6 +436,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                 
                 % exceeded generator Q limits
                 if ~isempty(exceeded_gens_q)
+                    xl_load_before = sum(network.bus(:, PD));
                     % O/UXL
                     
                     if size(network.bus, 1) == 1
@@ -467,7 +468,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
                     end
                     network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'XL'}, length(exceeded_gens_q), size(network.gen, 1), NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-                    observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'XL', 'target', Gnode_name, 'gen_rows', network.gen_id(exceeded_gens_q)));
+                    observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'XL', 'target', Gnode_name, 'gen_rows', network.gen_id(exceeded_gens_q), 'load_before_mw', xl_load_before, 'load_after_mw', sum(network.bus(:, PD))));
                 end
                 
                 %% ULGT
@@ -498,7 +499,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
                     end
                     network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'ULGT'}, length(exceeded_gens_p), size(network.gen, 1), NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-                    observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'ULGT', 'target', Gnode_name, 'gen_rows', network.gen_id(exceeded_gens_p)));
+                    observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'ULGT', 'target', Gnode_name, 'gen_rows', network.gen_id(exceeded_gens_p), 'load_after_mw', sum(network.bus(:, PD))));
                 end
                 
                 %% UVLS
@@ -558,7 +559,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                             network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
                         end
                         network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'UVLS'}, length(buses_uvls_apply) + length(buses_uvls_exceeded), size(network.bus, 1), load_initial - sum(network.bus(:, PD)), 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-                        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'UVLS', 'target', Gnode_name, 'bus_rows', network.bus_id([buses_uvls_apply(:); buses_uvls_exceeded(:)])));
+                        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'UVLS', 'target', Gnode_name, 'bus_rows', network.bus_id([buses_uvls_apply(:); buses_uvls_exceeded(:)]), 'load_before_mw', load_initial, 'load_after_mw', sum(network.bus(:, PD))));
                     end
                 end
                 
@@ -583,7 +584,7 @@ function network = apply_recursion(network, settings, i, k, Gnode_parent)
                         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
                     end
                     network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'OL'}, length(exceeded_lines), size(network.branch, 1), NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-                    observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OL', 'target', Gnode_name, 'branch_rows', network.branch_id(exceeded_lines)));
+                    observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OL', 'target', Gnode_name, 'branch_rows', network.branch_id(exceeded_lines), 'load_after_mw', sum(network.bus(:, PD))));
                 end
                 
                 if ~isempty(Gnode_name)
@@ -814,7 +815,7 @@ function [network, Gnode_parent] = apply_vcls(network, settings, Gnode_parent, i
             Gnode_name = get_hash();
             network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
             network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'SH'}, shunt_devices, shunt_devices, NaN, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-            observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'SH', 'target', Gnode_name, 'bus_rows', shunt_bus_rows));
+            observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'SH', 'target', Gnode_name, 'bus_rows', shunt_bus_rows, 'load_after_mw', sum(network.bus(:, PD))));
             Gnode_parent = Gnode_name;
         end
     end
@@ -834,7 +835,7 @@ function [network, Gnode_parent] = apply_vcls(network, settings, Gnode_parent, i
         Gnode_name = get_hash();
         network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {'failure'}, 0, 0, 0, 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
         network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'OPF'}, 1, load_initial, load_initial, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OPF', 'target', Gnode_name, 'bus_rows', network.bus_id, 'reason', opf_trip_reason));
+        observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OPF', 'target', Gnode_name, 'bus_rows', network.bus_id, 'reason', opf_trip_reason, 'load_before_mw', load_initial, 'load_after_mw', sum(network.bus(:, PD))));
         Gnode_parent = Gnode_name;
     end
 end
@@ -847,16 +848,14 @@ function [network, Gnode_parent, opf_success] = apply_opf(network, network_disp,
     
     load_initial = sum(network.bus(:, PD));
 
-    observe(settings, 'before_recovery_opf', network, i, k, Gnode_parent, struct());
     % use a faster OPF solver if available
     if have_fcn('ipopt')
-        results_disp = runopf(network_disp, mpoption(settings.mpopt, 'opf.ac.solver', 'IPOPT'));
+        results_disp = observed_opf(network_disp, mpoption(settings.mpopt, 'opf.ac.solver', 'IPOPT'), settings, network, i, k, Gnode_parent);
     else
-        results_disp = runopf(network_disp, settings.mpopt);
+        results_disp = observed_opf(network_disp, settings.mpopt, settings, network, i, k, Gnode_parent);
     end
     
     opf_success = results_disp.success;
-    observe(settings, 'recovery_opf_result', network, i, k, Gnode_parent, struct('success', logical(opf_success)));
 
     % OPF converged
     if results_disp.success == 1
@@ -886,7 +885,12 @@ function [network, Gnode_parent, opf_success] = apply_opf(network, network_disp,
             end
         end
 
-        shed_bus_numbers = results_disp.gen(loads_shed, GEN_BUS);
+        shed_bus_numbers = [];
+        if ~isempty(loads_shed)
+            dispatchable = results_disp.gen(:, PMIN) < 0;
+            changed = dispatchable & (abs(results_disp.gen(:, PG) - results_disp.gen(:, PMIN)) > 1e-6);
+            shed_bus_numbers = results_disp.gen(changed, GEN_BUS);
+        end
         results_disp.gen(results_disp.gen(:, PMIN) < 0, :) = [];
 
         % keep new voltages and generator outputs
@@ -902,7 +906,7 @@ function [network, Gnode_parent, opf_success] = apply_opf(network, network_disp,
             Gnode_name = get_hash();
             network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {''}, sum(network.bus(:, PD)), length(find(network.gen(:, GEN_STATUS) == 1)), length(find(network.branch(:, BR_STATUS) == 1)), 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
             network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'VC'}, ls, load_initial, ls * load_initial, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-            observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'VC', 'target', Gnode_name, 'bus_rows', network.bus_id(ismember(network.bus(:, BUS_I), shed_bus_numbers))));
+            observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'VC', 'target', Gnode_name, 'bus_rows', network.bus_id(ismember(network.bus(:, BUS_I), shed_bus_numbers)), 'load_before_mw', load_initial, 'load_after_mw', sum(network.bus(:, PD))));
             Gnode_parent = Gnode_name;
         else
             % no: trip islands
@@ -919,7 +923,7 @@ function [network, Gnode_parent, opf_success] = apply_opf(network, network_disp,
             Gnode_name = get_hash();
             network.G = addnode(network.G, table({Gnode_name}, size(network.bus, 1), {'failure'}, 0, 0, 0, 'VariableNames', {'Name', 'Buses', 'Type', 'Load', 'Generators', 'Lines'}));
             network.G = addedge(network.G, table({Gnode_parent Gnode_name}, {'OPF'}, 1, load_initial, load_initial, 'VariableNames', {'EndNodes', 'Type', 'Weight', 'Base', 'LS'}));
-            observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OPF', 'target', Gnode_name, 'bus_rows', network.bus_id, 'reason', opf_trip_reason));
+            observe(settings, 'action', network, i, k, Gnode_parent, struct('type', 'OPF', 'target', Gnode_name, 'bus_rows', network.bus_id, 'reason', opf_trip_reason, 'load_before_mw', load_initial, 'load_after_mw', sum(network.bus(:, PD))));
             Gnode_parent = Gnode_name;
         end
         
@@ -1002,7 +1006,35 @@ function result = observed_pf(network, settings, i, k, parent, stage)
     observe(settings, stage, result, i, k, parent, struct('success', logical(result.success)));
 end
 
-function observe(settings, stage, network, i, k, parent, detail)
+function result = observed_opf(network_disp, options, settings, island, i, k, parent)
+    observe(settings, 'before_recovery_opf', island, i, k, parent, ...
+        struct('solver', options.opf.ac.solver), network_disp);
+    result = runopf(network_disp, options);
+    if ~isfield(settings, 'observer')
+        return
+    end
+    define_constants;
+    detail = struct('success', logical(result.success), 'solver', options.opf.ac.solver, ...
+        'objective', result.f);
+    if isfield(result, 'raw') && isfield(result.raw, 'info')
+        detail.exit_code = result.raw.info;
+    end
+    if isfield(result, 'raw') && isfield(result.raw, 'output')
+        for field = {'iterations', 'message', 'alg'}
+            key = field{1};
+            if isfield(result.raw.output, key)
+                detail.(key) = result.raw.output.(key);
+            end
+        end
+    end
+    loads = isload(network_disp.gen);
+    detail.dispatchable_demand_mw = -sum(network_disp.gen(loads, PMIN));
+    detail.dispatchable_served_mw = -sum(result.gen(loads, PG));
+    detail.dispatchable_shed_mw = detail.dispatchable_demand_mw - detail.dispatchable_served_mw;
+    observe(settings, 'recovery_opf_result', island, i, k, parent, detail, result);
+end
+
+function observe(settings, stage, network, i, k, parent, detail, dispatch)
     if ~isfield(settings, 'observer')
         return
     end
@@ -1014,6 +1046,13 @@ function observe(settings, stage, network, i, k, parent, detail)
         state.bus = network.bus;
         state.gen = network.gen;
         state.branch = network.branch;
+    end
+    if nargin == 8
+        % load2disp appends artificial generators in external bus order.
+        extra = size(dispatch.gen,1) - numel(network.gen_id);
+        state.opf_network = struct('baseMVA', dispatch.baseMVA, 'bus', dispatch.bus, ...
+            'gen', dispatch.gen, 'branch', dispatch.branch, 'gencost', dispatch.gencost, ...
+            'gen_rows', [network.gen_id; zeros(extra,1)]);
     end
     settings.observer(entry, state);
 end

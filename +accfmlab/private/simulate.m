@@ -11,6 +11,7 @@ function record = simulate(prepared, scenario)
     warningCleanup = onCleanup(@() warning(priorWarning)); %#ok<NASGU>
     recorded = cell(0,1);
     states = cell(0,1);
+    opfNetworks = cell(0,1);
     s.record_states = prepared.config.record_states;
     s.observer = @collect;
     row = struct('scenario_id',scenario.id,'seed',scenario.seed,'status',"error", ...
@@ -127,7 +128,7 @@ function record = simulate(prepared, scenario)
     row.elapsed_sec = toc(clock);
     record = struct('summary',row,'scenario',scenario,'initial',initial, ...
         'ledger',ledger,'result',r,'events',{recorded},'states',{states},'failure',failure, ...
-        'record_states',s.record_states,'finished_utc', ...
+        'opf_networks',{opfNetworks}, 'record_states',s.record_states,'finished_utc', ...
         char(datetime('now','TimeZone','UTC','Format',"uuuu-MM-dd'T'HH:mm:ss.SSS'Z'")));
 
     function collect(entry,state)
@@ -135,6 +136,11 @@ function record = simulate(prepared, scenario)
         entry.bus_rows = state.bus_rows;
         entry.gen_rows = state.gen_rows;
         entry.branch_rows = state.branch_rows;
+        if isfield(state,'opf_network')
+            opfNetworks{end+1,1} = state.opf_network;
+            entry.opf_network_index = numel(opfNetworks);
+            state = rmfield(state,'opf_network');
+        end
         recorded{end+1,1} = entry;
         if s.record_states
             states{end+1,1} = rmfield(state,{'bus_rows','gen_rows','branch_rows'});
