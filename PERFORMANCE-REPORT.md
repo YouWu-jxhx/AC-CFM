@@ -52,3 +52,40 @@ foreach ($size in @(9, 118)) {
     }
 }
 ```
+
+## 最终质量验收的千场景实测
+
+2026-11-26 在相同 Windows、MATLAB R2025a、MATPOWER 8.1 legacy、NR/MIPS 环境运行。生产使用 `67a9ca3` 的 MATLAB 源码，冻结摘要为 `2a437aa29204dfd4a9757d6ecd6d9f81f6b39a7a080f8bcc2d07e89d938c9242`。随后收紧了结构准入的边界检查，性能表对应实际执行的冻结版本。
+
+先在负荷倍率 1.00 上配对试跑 23 个事故，依次关闭和开启快照。这两个批次分别耗时 27.84 和 36.16 秒，场景文件分别为 3.32 和 28.32 MB。46 份结果均通过独立校验。试跑观察到的内存规模与可用磁盘允许继续四批正式生产。配对试跑只有一次顺序测量，MATLAB 预热和桌面负载会影响耗时差异。
+
+正式生产为四个负荷倍率各 250 个场景。倍率 1.00 运行全部 186 个有效支路 N-1、54 个 N-2、6 个机组及 4 个母线事故。每个其余倍率运行 40 个支路 N-1、200 个 N-2、6 个机组及 4 个母线事故。N-2 使用排序后的在运支路对无放回采样。每组 MATLAB twister 采样种子为 `20261126 + 组号`，用不同字段保存图节点命名种子。每组独立执行工况、限值与 N-0 检查。跨工况同事故按不同物理实验计入，同一工况下没有仅换图种子重复取样。
+
+| 负荷倍率 | 一般快照 | 发布数 | 进程合计 s | 场景仿真 P50 / P95 s | 峰值 GiB | 场景文件 MB |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 关 | 250 | 335.88 | 0.367 / 4.208 | 1.480 | 40.39 |
+| 0.95 | 关 | 250 | 313.64 | 0.372 / 4.740 | 1.525 | 46.85 |
+| 1.05 | 关 | 250 | 455.34 | 0.535 / 5.515 | 1.511 | 57.98 |
+| 1.025 | 全量 | 250 | 448.05 | 0.470 / 5.288 | 1.567 | 488.67 |
+
+生产进程合计 1552.91 秒，场景文件共 633.88 MB。表中进程时间包括 MATLAB 启动和恢复。单场景时间来自 `simulate`，包含观测开销。峰值为进程工作集，倍率 1.00 报告续算进程，强制终止段未采集进程峰值。四个生产批次串行运行，第 3、4 批期间有短期独立验收任务，墙钟反映实测共享桌面负载。全量快照组与其他生产组的工况及清单不同，快照成本以配对试跑为比较依据。
+
+1000 个场景全部发布且通过校验和、冻结工况、MATLAB/Python 导出一致性和数值语义校验。场景状态为 `completed_model` 969、`model_opf_trip` 31。日志统计共 17611 次 PF、860 次恢复 OPF、98751 条事件，最大级联代数 23。234 个场景有中间求解异常或失败返回，其中 203 个最终状态为 `completed_model`。逐调用计数有 2322 次 PF 失败返回、96 次 OPF 失败返回、0 次求解调用异常。模型停岛与数值失败频率用于解释这组受控实验的执行结果。
+
+首批在第 125 个场景发布后强制终止，续算补齐剩余场景。首个场景的文件在进程终止前后核对。续算前后核对全部 125 个已提交场景的 875 个文件，字节保持一致。重复进入全量已提交的首批，核验和重建汇总耗时 8.16 秒。
+
+第 3、4 批记录到交换导出约 21.48 与 34.97 秒，包含 JSON/MAT/CSV 编码与写入。两批 `file_hash` 用时约 3.51 与 6.05 秒，其中一部分包含在 `scene_checksums` 中。汇总发布约 2.51 与 2.48 秒，分别约占实际批次内墙钟的 0.57% 与 0.57%。250 场景全量续算检查中，校验清单约 1.60 秒，汇总发布约 2.38 秒。MATLAB profiler 的包含时间可能重叠。当前每批 250 个场景的汇总开销较小，保留原串行发布及汇总策略。单批规模增加时，汇总的累积写入量仍按二次增长。
+
+### 原始数据与复现
+
+- [逐场景故障、结果、文件字节与验证状态](benchmarks/final-quality/production-scenarios.csv)
+- [冻结设置及采样说明所依据的计划引用](benchmarks/final-quality/production-design.json)
+- [进程时间与强制恢复结果](benchmarks/final-quality/processes.csv) · [批次峰值测量](benchmarks/final-quality/production-batch.csv) · [Profiler 原始指标](benchmarks/final-quality/production-profile.csv)
+- [文件占用](benchmarks/final-quality/production-disk.csv) · [配对试跑场景](benchmarks/final-quality/pilot-scenarios.csv) · [配对试跑批次](benchmarks/final-quality/pilot-batch.csv)
+
+```powershell
+$matlab = (Get-Command matlab).Source
+python benchmarks/run_long.py runs/reproduce-long --matlab $matlab
+& $matlab -wait -batch "addpath('benchmarks'); long_batch(fullfile(pwd,'runs','reproduce-long'),1,'recheck');"
+python benchmarks/report_long.py runs/reproduce-long runs/reproduce-metrics
+```

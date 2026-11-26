@@ -4,6 +4,11 @@
 
 ## 快速开始
 
+```powershell
+git clone https://github.com/YouWu-jxhx/AC-CFM.git
+cd AC-CFM
+```
+
 在已有 MATLAB R2025a、MATPOWER 8.1 legacy 和 MIPS 的 Windows 会话中切换到本仓库。默认从 `D:/matpower8.1` 加载 MATPOWER。
 
 ```matlab
@@ -16,7 +21,7 @@ record = accfmlab.run(cfg);
 disp(record.summary)
 ```
 
-用 Python 3.11 验证所提交场景、计划引用及数据语义。
+默认工况下，支路第 9 行场景的摘要应为 `completed_model`，失供约 2352.30 MW。输出位于 `runs/ieee118-row9/scenario_000001`。批次根下的 `plan.json` 和 `summary.csv` 提供来源与索引。按安装文档准备 Python 3.11 后，可核验校验和、计划引用及动作和图的数据语义。
 
 ```powershell
 python python/read_run.py --require-plan runs/ieee118-row9/scenario_000001
@@ -41,4 +46,4 @@ python python/read_run.py --require-plan runs/ieee118-row9/scenario_000001
 - [初始审计](AUDIT.md)、[实施计划](IMPROVEMENT-PLAN.md)、[当前进展](PROGRESS.md)
 - [项目 MIT 许可证](LICENSE)、[第三方许可证](THIRD-PARTY-NOTICES.md)、[引用](CITATION.cff)
 
-验证覆盖固定 118 工况、独立双母线保护夹具和 Windows 本地卷串行恢复。数值求解失败、模型停岛和动态物理失稳需分别解释。大型生产任务的规模、抽样及数据留存策略应以实际批次测量为依据。
+验证覆盖固定 118 工况、独立双母线保护夹具、1000 个不同事故工况组合和 Windows 本地卷串行恢复。数值求解失败、模型停岛和动态物理失稳需分别解释。大型生产任务的规模、抽样及数据留存策略应以实际批次测量为依据。

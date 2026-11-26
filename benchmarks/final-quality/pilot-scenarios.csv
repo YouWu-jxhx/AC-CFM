@@ -1,0 +1,47 @@
+experiment,group,load_scale,record_states,id,model_seed,branch_rows,gen_rows,bus_numbers,validation,validation_error,status,error_category,error_id,elapsed_seconds,lost_mw,native_pf_count,pf_calls,opf_calls,events,generation,pf_failed_returns,opf_failed_returns,solver_exceptions,solver_issue,opf_trip,record_mat_bytes,metadata_json_bytes,events_jsonl_bytes,numeric_mat_bytes,nodes_csv_bytes,edges_csv_bytes,checksums_json_bytes,scenario_bytes
+group-1-pilot,1,1,0,1,118001,96,,,passed,,completed_model,,,5.1134759,1496.63104994912,56,56,2,327,11,3,1,0,True,False,96414,5328,199556,58728,1625,2885,1019,365555
+group-1-pilot,1,1,0,2,118002,181,,,passed,,completed_model,,,0.2699084,0,1,1,0,10,1,0,0,0,False,False,33612,2580,13336,29492,97,65,1014,80196
+group-1-pilot,1,1,0,3,118003,151,,,passed,,completed_model,,,0.4824776,0,3,3,0,26,3,0,0,0,False,False,36122,2580,35086,29469,180,160,1016,104613
+group-1-pilot,1,1,0,4,118004,101,,,passed,,completed_model,,,0.1542083,0,1,1,0,10,1,0,0,0,False,False,33631,2580,13335,29500,97,65,1014,80222
+group-1-pilot,1,1,0,5,118005,150,,,passed,,completed_model,,,0.2028174,0,3,3,0,14,1,0,0,0,False,False,33967,2580,18549,29421,97,65,1014,85693
+group-1-pilot,1,1,0,6,118006,122,,,passed,,completed_model,,,0.2608624,0,2,2,0,18,2,0,0,0,False,False,34690,2580,24215,29499,141,105,1016,92246
+group-1-pilot,1,1,0,7,118007,34,,,passed,,completed_model,,,0.3814367,0,3,3,0,26,3,0,0,0,False,False,36136,2575,35076,29487,180,160,1016,104630
+group-1-pilot,1,1,0,8,118008,94,,,passed,,completed_model,,,0.5438864,0,10,10,0,48,4,0,0,0,False,False,38832,2684,64505,29405,219,312,1016,136973
+group-1-pilot,1,1,0,9,118009,46 180,,,passed,,completed_model,,,0.152693,0,1,1,0,10,1,0,0,0,False,False,33498,2717,13342,29466,97,65,1014,80199
+group-1-pilot,1,1,0,10,118010,88 118,,,passed,,completed_model,,,0.6627043,10.199999999999818,13,13,0,59,5,0,0,0,False,False,40956,2921,79367,29800,264,373,1017,154698
+group-1-pilot,1,1,0,11,118011,11 66,,,passed,,completed_model,,,0.5231095,0,8,8,0,43,4,0,0,0,False,False,38177,2727,57835,29382,219,256,1017,129613
+group-1-pilot,1,1,0,12,118012,98 181,,,passed,,completed_model,,,0.520323,0,8,8,0,44,4,0,0,0,False,False,38138,2809,59225,29419,219,312,1017,131139
+group-1-pilot,1,1,0,13,118013,17 165,,,passed,,completed_model,,,0.3657242,0,3,3,0,26,3,0,0,0,False,False,36055,2720,35079,29480,180,160,1017,104691
+group-1-pilot,1,1,0,14,118014,99 115,,,passed,,completed_model,,,0.5101938,0,6,6,0,39,4,0,0,0,False,False,38066,2810,52598,29430,219,257,1017,124397
+group-1-pilot,1,1,0,15,118015,27 50,,,passed,,completed_model,,,0.3960978,0,5,5,0,30,3,0,0,0,False,False,36004,2715,40293,29397,180,160,1017,109766
+group-1-pilot,1,1,0,16,118016,155 160,,,passed,,completed_model,,,0.2722961,0,5,5,0,30,3,0,0,0,False,False,35964,2725,40309,29376,180,160,1017,109731
+group-1-pilot,1,1,0,17,118017,33 71,,,passed,,completed_model,,,5.4477494,2734.8129589714536,53,53,5,280,13,13,1,0,True,False,187272,5108,223523,150096,1401,2152,1022,570574
+group-1-pilot,1,1,0,18,118018,21 162,,,passed,,completed_model,,,0.5042581,0,6,6,0,38,4,0,0,0,False,False,37024,2720,51168,29382,219,215,1017,121745
+group-1-pilot,1,1,0,19,118019,,9,,passed,,completed_model,,,0.4224242,0,3,3,0,26,3,0,0,0,False,False,36210,2572,35071,29500,180,160,1017,104710
+group-1-pilot,1,1,0,20,118020,,33,,passed,,completed_model,,,0.208052,0,1,1,0,10,1,0,0,0,False,False,33686,2576,13337,29502,97,65,1015,80278
+group-1-pilot,1,1,0,21,118021,,36,,passed,,completed_model,,,0.3730849,0,3,3,0,26,3,0,0,0,False,False,36198,2577,35107,29478,180,160,1017,104717
+group-1-pilot,1,1,0,22,118022,,,106,passed,,completed_model,,,2.3190441,417.2753499999999,37,37,0,211,7,0,0,0,False,False,55498,4106,149084,29675,1023,1707,1020,242113
+group-1-pilot,1,1,0,23,118023,,,113,passed,,completed_model,,,0.3173541,6,4,4,0,30,2,0,0,0,False,False,36007,2693,34234,29435,218,200,1017,103804
+group-1-pilot-traced,1,1,1,1,118001,96,,,passed,,completed_model,,,4.2768848,1496.63104994912,56,56,2,327,11,3,1,0,True,False,1717975,5327,199556,1506325,1625,2885,1031,3434724
+group-1-pilot-traced,1,1,1,2,118002,181,,,passed,,completed_model,,,0.484398,0,1,1,0,10,1,0,0,0,False,False,175347,2578,13336,165609,97,65,1016,358048
+group-1-pilot-traced,1,1,1,3,118003,151,,,passed,,completed_model,,,1.151419,0,3,3,0,26,3,0,0,0,False,False,406104,2578,35086,382003,180,160,1018,827129
+group-1-pilot-traced,1,1,1,4,118004,101,,,passed,,completed_model,,,0.4584405,0,1,1,0,10,1,0,0,0,False,False,175419,2579,13335,165676,97,65,1016,358187
+group-1-pilot-traced,1,1,1,5,118005,150,,,passed,,completed_model,,,0.4337815,0,3,3,0,14,1,0,0,0,False,False,232140,2579,18549,220412,97,65,1016,474858
+group-1-pilot-traced,1,1,1,6,118006,122,,,passed,,completed_model,,,0.7171928,0,2,2,0,18,2,0,0,0,False,False,290313,2579,24215,274292,141,105,1018,592663
+group-1-pilot-traced,1,1,1,7,118007,34,,,passed,,completed_model,,,0.7485626,0,3,3,0,26,3,0,0,0,False,False,406269,2574,35076,382163,180,160,1018,827440
+group-1-pilot-traced,1,1,1,8,118008,94,,,passed,,completed_model,,,0.6193368,0,10,10,0,48,4,0,0,0,False,False,717380,2683,64505,680672,219,312,1018,1466789
+group-1-pilot-traced,1,1,1,9,118009,46 180,,,passed,,completed_model,,,0.1474169,0,1,1,0,10,1,0,0,0,False,False,175126,2717,13342,165500,97,65,1016,357863
+group-1-pilot-traced,1,1,1,10,118010,88 118,,,passed,,completed_model,,,0.7966483,10.199999999999818,13,13,0,59,5,0,0,0,False,False,877084,2920,79367,829938,264,373,1019,1790965
+group-1-pilot-traced,1,1,1,11,118011,11 66,,,passed,,completed_model,,,0.7815949,0,8,8,0,43,4,0,0,0,False,False,646147,2726,57835,612298,219,256,1019,1320500
+group-1-pilot-traced,1,1,1,12,118012,98 181,,,passed,,completed_model,,,1.483773,0,8,8,0,44,4,0,0,0,False,False,659764,2808,59225,626439,219,312,1019,1349786
+group-1-pilot-traced,1,1,1,13,118013,17 165,,,passed,,completed_model,,,1.1394275,0,3,3,0,26,3,0,0,0,False,False,406107,2719,35079,381952,180,160,1019,827216
+group-1-pilot-traced,1,1,1,14,118014,99 115,,,passed,,completed_model,,,1.5630363,0,6,6,0,39,4,0,0,0,False,False,590570,2809,52598,558275,219,257,1019,1205747
+group-1-pilot-traced,1,1,1,15,118015,27 50,,,passed,,completed_model,,,1.1114491,0,5,5,0,30,3,0,0,0,False,False,460781,2714,40293,435601,180,160,1019,940748
+group-1-pilot-traced,1,1,1,16,118016,155 160,,,passed,,completed_model,,,0.9709001,0,5,5,0,30,3,0,0,0,False,False,460268,2724,40309,435274,180,160,1019,939934
+group-1-pilot-traced,1,1,1,17,118017,33 71,,,passed,,completed_model,,,4.9318916,2734.8129589714536,53,53,5,280,13,13,1,0,True,False,2241892,5107,223523,1984505,1401,2152,1032,4459612
+group-1-pilot-traced,1,1,1,18,118018,21 162,,,passed,,completed_model,,,0.5134228,0,6,6,0,38,4,0,0,0,False,False,573762,2719,51168,543887,219,215,1019,1172989
+group-1-pilot-traced,1,1,1,19,118019,,9,,passed,,completed_model,,,0.3740383,0,3,3,0,26,3,0,0,0,False,False,406569,2571,35071,382416,180,160,1019,827986
+group-1-pilot-traced,1,1,1,20,118020,,33,,passed,,completed_model,,,0.1337034,0,1,1,0,10,1,0,0,0,False,False,175624,2576,13337,165699,97,65,1017,358415
+group-1-pilot-traced,1,1,1,21,118021,,36,,passed,,completed_model,,,0.3592284,0,3,3,0,26,3,0,0,0,False,False,406284,2576,35107,382176,180,160,1019,827502
+group-1-pilot-traced,1,1,1,22,118022,,,106,passed,,completed_model,,,2.145266,417.2753499999999,37,37,0,211,7,0,0,0,False,False,1376078,4104,149084,1272858,1023,1707,1032,2805886
+group-1-pilot-traced,1,1,1,23,118023,,,113,passed,,completed_model,,,0.2110584,6,4,4,0,30,2,0,0,0,False,False,387829,2692,34234,364931,218,200,1019,791123

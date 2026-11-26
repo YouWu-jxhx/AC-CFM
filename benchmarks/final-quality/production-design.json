@@ -1,0 +1,1298 @@
+[
+  {
+    "experiment": "group-1",
+    "group": 1,
+    "sampling_seed": 20261127,
+    "planned": 250,
+    "load_scale": 1,
+    "record_states": false,
+    "operating_point": "opf",
+    "plan_sha256": "94b7d1caac5cddf3774f1e9c11c9911b9931123b693a5c8e806af556f530f117",
+    "case_sha256": "b1af0833849040c04babc3700631cff0d9afa66b79c5d3e13ae79bdf516cec78",
+    "matlab": "25.1.0.2943329 (R2025a)",
+    "matpower": "8.1",
+    "solver": "MIPS",
+    "pf_core": "legacy",
+    "observer_generator_version": "2.1",
+    "solver_inventory": [
+      [
+        "runpf",
+        "lib/runpf.m",
+        "467ffd918e106ca75b690fb50adc77ac4544f898753359485a65518f3db4a66a"
+      ],
+      [
+        "runopf",
+        "lib/runopf.m",
+        "625f0bca3c2d3b6d14d1e7e09c16b9340cdedff301034e8bfb1b2b9f2bc2a872"
+      ],
+      [
+        "mpoption",
+        "lib/mpoption.m",
+        "fdf5a48b695f69d371258d8c5ab5bf824b28920f909356fbbb5c6b7773f8a106"
+      ],
+      [
+        "mips",
+        "mips/lib/mips.m",
+        "cbf2ad3de9736b3843c278d044879f9919fc313f06286c73831359324db2b33d"
+      ],
+      [
+        "nlpopf_solver",
+        "lib/nlpopf_solver.m",
+        "37a13364b21c89491bab8c6571c3d45fa244f31d73924114405002fb2a80e0cc"
+      ],
+      [
+        "newtonpf",
+        "lib/newtonpf.m",
+        "347220f6d83b4de31bc622c3a3cdc09ccccca52bfa770a81d9703aa28c860edc"
+      ],
+      [
+        "ext2int",
+        "lib/ext2int.m",
+        "a43954979f94b42cde6b1b3bcfa565558012d91627426bb7279bf62156e4f3d0"
+      ],
+      [
+        "int2ext",
+        "lib/int2ext.m",
+        "82cbdcd17acc90cff40a6e527b85825744354f47e10f54948323148b39994d25"
+      ],
+      [
+        "e2i_field",
+        "lib/e2i_field.m",
+        "e799675f21469c9b61601f7e4d5c4e08d3a4de7d7f8bf60db4087c7ce5c59e03"
+      ],
+      [
+        "i2e_field",
+        "lib/i2e_field.m",
+        "b8e4e99d1db9b75372d8c97ad83ab9f38569800cf01122ed47116c5852cf1857"
+      ],
+      [
+        "find_islands",
+        "lib/find_islands.m",
+        "a00eaa51ae28b0f19c359b3933e5dbdaedc192d7bd4de6cb148b77fd4a2a2022"
+      ],
+      [
+        "extract_islands",
+        "lib/extract_islands.m",
+        "63511443386de6deaabdf6567396eff8b85b4d123f3fba96e1f55053176839ac"
+      ],
+      [
+        "load2disp",
+        "lib/load2disp.m",
+        "fd880a332eed492718733f04147214018942c4d04b72f1e6bdc64be1d81b8bf2"
+      ],
+      [
+        "isload",
+        "lib/isload.m",
+        "bb87fecdfc972bfe494c273c9fbc80819ba45345b7ba92b5ea6138218991cc12"
+      ],
+      [
+        "idx_bus",
+        "lib/idx_bus.m",
+        "fe60f4150a50a7311d26d23edfc00ed49ab7442e4be78c520f4e1cf91019e6eb"
+      ],
+      [
+        "idx_gen",
+        "lib/idx_gen.m",
+        "5f070fa5321e3a0ec2b0f01df60f3ec1e13d49676115e5b1e278f6766311cdd1"
+      ],
+      [
+        "idx_brch",
+        "lib/idx_brch.m",
+        "85b93d705427624d17ed43595c052ce89a6a0976735631ec7c3621d3caf2b4c2"
+      ],
+      [
+        "idx_cost",
+        "lib/idx_cost.m",
+        "d1a12d33631a11d3f246dc0502dc333ce77764b35bfb7ff83753c8afc2efdc5d"
+      ],
+      [
+        "define_constants",
+        "lib/define_constants.m",
+        "ce59aec51a83ed6f118456b5fa5146fce8247f71174868c379f048abc5a15aeb"
+      ],
+      [
+        "makeYbus",
+        "lib/makeYbus.m",
+        "618717d4ab738fec24d6b6624ba4b56c7953cb2205af2197db5199317611c10e"
+      ],
+      [
+        "makeSbus",
+        "lib/makeSbus.m",
+        "52a0a983355c3875fdc5e7a9164756d3d3f75271d09ef66eacc41924083b0e07"
+      ],
+      [
+        "dSbus_dV",
+        "lib/dSbus_dV.m",
+        "bd86d31bbb66d51d32d1dc087d35192416db00c51492d0c011bcb9939285be6c"
+      ],
+      [
+        "pfsoln",
+        "lib/pfsoln.m",
+        "01bd2214f72beb3a2b32f1e55d8226ed298a89dbdadace5218590727dadc48b2"
+      ],
+      [
+        "bustypes",
+        "lib/bustypes.m",
+        "c18fb5a579c6931c77e7abaf2c595e71ae17bf1e22bc40f8fe792e7d7cc1e72c"
+      ],
+      [
+        "mplinsolve",
+        "mips/lib/mplinsolve.m",
+        "b1285ed46ab092012ca85b85bcc96725d3f8dd7370d21e8c14dc81739d5b48fd"
+      ],
+      [
+        "opf",
+        "lib/opf.m",
+        "e4115202d65619b986d4471763e4421cb8f7c95436f14bd17a885e80c7e5977f"
+      ],
+      [
+        "opf_setup",
+        "lib/opf_setup.m",
+        "96ab979f6836460fc066fda48ebf77d4bdc449ca2c33796b4dfa72c08968b1f8"
+      ],
+      [
+        "opf_execute",
+        "lib/opf_execute.m",
+        "07f24b1357b68f7ed14bcc2a8b95e2218ea175f22fae804c176ffcdc7d64e352"
+      ],
+      [
+        "mpoption_info_mips",
+        "lib/mpoption_info_mips.m",
+        "75d997da9142ce593f9900a74d25b4c7d4e7b0792e907f08e79402e1ec658fe3"
+      ]
+    ],
+    "source_sha256": "2a437aa29204dfd4a9757d6ecd6d9f81f6b39a7a080f8bcc2d07e89d938c9242",
+    "settings": {
+      "verbose": 0,
+      "mpopt": {
+        "v": 25,
+        "model": "AC",
+        "pf": {
+          "alg": "NR",
+          "current_balance": 0,
+          "v_cartesian": 0,
+          "tol": 1e-08,
+          "nr": {
+            "max_it": 10,
+            "lin_solver": ""
+          },
+          "fd": {
+            "max_it": 30
+          },
+          "gs": {
+            "max_it": 1000
+          },
+          "zg": {
+            "max_it": 1000
+          },
+          "radial": {
+            "max_it": 20,
+            "vcorr": 0
+          },
+          "enforce_q_lims": 0
+        },
+        "cpf": {
+          "parameterization": 3,
+          "stop_at": "NOSE",
+          "enforce_p_lims": 0,
+          "enforce_q_lims": 0,
+          "enforce_v_lims": 0,
+          "enforce_flow_lims": 0,
+          "step": 0.05,
+          "step_min": 0.0001,
+          "step_max": 0.2,
+          "adapt_step": 0,
+          "adapt_step_damping": 0.7,
+          "adapt_step_tol": 0.001,
+          "target_lam_tol": 1e-05,
+          "nose_tol": 1e-05,
+          "p_lims_tol": 0.01,
+          "q_lims_tol": 0.01,
+          "v_lims_tol": 0.0001,
+          "flow_lims_tol": 0.01,
+          "plot": {
+            "level": 0,
+            "bus": []
+          },
+          "user_callback": ""
+        },
+        "opf": {
+          "ac": {
+            "solver": "MIPS"
+          },
+          "dc": {
+            "solver": "DEFAULT"
+          },
+          "current_balance": 0,
+          "v_cartesian": 0,
+          "violation": 5e-06,
+          "use_vg": 0,
+          "flow_lim": "S",
+          "ignore_angle_lim": 0,
+          "softlims": {
+            "default": 1
+          },
+          "start": 0,
+          "return_raw_der": 0
+        },
+        "verbose": 0,
+        "out": {
+          "all": 0,
+          "sys_sum": 1,
+          "area_sum": 0,
+          "bus": 1,
+          "branch": 1,
+          "gen": 0,
+          "lim": {
+            "all": -1,
+            "v": 1,
+            "line": 1,
+            "pg": 1,
+            "qg": 1
+          },
+          "force": 0,
+          "suppress_detail": -1
+        },
+        "mips": {
+          "step_control": 0,
+          "linsolver": "",
+          "feastol": 0,
+          "gradtol": 1e-06,
+          "comptol": 1e-06,
+          "costtol": 1e-06,
+          "max_it": 150,
+          "sc": {
+            "red_it": 20
+          }
+        },
+        "exp": {
+          "use_legacy_core": 1,
+          "sys_wide_zip_loads": {
+            "pw": [],
+            "qw": []
+          }
+        },
+        "fmincon": {
+          "alg": 4,
+          "tol_x": 0.0001,
+          "tol_f": 0.0001,
+          "max_it": 0
+        },
+        "intlinprog": [],
+        "linprog": [],
+        "most": {
+          "build_model": 1,
+          "solve_model": 1,
+          "resolve_new_cost": 0,
+          "dc_model": 1,
+          "fixed_res": -1,
+          "q_coordination": 0,
+          "security_constraints": -1,
+          "storage": {
+            "terminal_target": -1,
+            "cyclic": 0
+          },
+          "uc": {
+            "run": -1,
+            "cyclic": 0
+          },
+          "alpha": 0,
+          "solver": "DEFAULT",
+          "skip_prices": 0,
+          "price_stage_warn_tol": 1e-07
+        },
+        "quadprog": []
+      },
+      "max_recursion_depth": 100,
+      "uvls_per_step": 0.05,
+      "uvls_max_steps": 5,
+      "dP_limit": 0.15,
+      "P_overhead": 0.1,
+      "Q_tolerance": 0.1,
+      "grid_forming": [],
+      "keep_networks_after_cascade": 0
+    },
+    "operating_point_audit": {
+      "alpha": 1,
+      "load_mw": 4242,
+      "p_reserve_mw": 2134.3146952848674,
+      "max_end_loading": 1.000000026099126,
+      "max_ac_cfm_loading": 0.9901594634840746,
+      "max_mismatch_pu": 3.825378756528301e-14,
+      "n0_loss_fraction": 0,
+      "n0_graph_edges": 1
+    }
+  },
+  {
+    "experiment": "group-2",
+    "group": 2,
+    "sampling_seed": 20261128,
+    "planned": 250,
+    "load_scale": 0.95,
+    "record_states": false,
+    "operating_point": "opf",
+    "plan_sha256": "a058cba0b16725201c81eabc6ae1a74ed926a383e506f37802ae806a3b1a74fd",
+    "case_sha256": "b1af0833849040c04babc3700631cff0d9afa66b79c5d3e13ae79bdf516cec78",
+    "matlab": "25.1.0.2943329 (R2025a)",
+    "matpower": "8.1",
+    "solver": "MIPS",
+    "pf_core": "legacy",
+    "observer_generator_version": "2.1",
+    "solver_inventory": [
+      [
+        "runpf",
+        "lib/runpf.m",
+        "467ffd918e106ca75b690fb50adc77ac4544f898753359485a65518f3db4a66a"
+      ],
+      [
+        "runopf",
+        "lib/runopf.m",
+        "625f0bca3c2d3b6d14d1e7e09c16b9340cdedff301034e8bfb1b2b9f2bc2a872"
+      ],
+      [
+        "mpoption",
+        "lib/mpoption.m",
+        "fdf5a48b695f69d371258d8c5ab5bf824b28920f909356fbbb5c6b7773f8a106"
+      ],
+      [
+        "mips",
+        "mips/lib/mips.m",
+        "cbf2ad3de9736b3843c278d044879f9919fc313f06286c73831359324db2b33d"
+      ],
+      [
+        "nlpopf_solver",
+        "lib/nlpopf_solver.m",
+        "37a13364b21c89491bab8c6571c3d45fa244f31d73924114405002fb2a80e0cc"
+      ],
+      [
+        "newtonpf",
+        "lib/newtonpf.m",
+        "347220f6d83b4de31bc622c3a3cdc09ccccca52bfa770a81d9703aa28c860edc"
+      ],
+      [
+        "ext2int",
+        "lib/ext2int.m",
+        "a43954979f94b42cde6b1b3bcfa565558012d91627426bb7279bf62156e4f3d0"
+      ],
+      [
+        "int2ext",
+        "lib/int2ext.m",
+        "82cbdcd17acc90cff40a6e527b85825744354f47e10f54948323148b39994d25"
+      ],
+      [
+        "e2i_field",
+        "lib/e2i_field.m",
+        "e799675f21469c9b61601f7e4d5c4e08d3a4de7d7f8bf60db4087c7ce5c59e03"
+      ],
+      [
+        "i2e_field",
+        "lib/i2e_field.m",
+        "b8e4e99d1db9b75372d8c97ad83ab9f38569800cf01122ed47116c5852cf1857"
+      ],
+      [
+        "find_islands",
+        "lib/find_islands.m",
+        "a00eaa51ae28b0f19c359b3933e5dbdaedc192d7bd4de6cb148b77fd4a2a2022"
+      ],
+      [
+        "extract_islands",
+        "lib/extract_islands.m",
+        "63511443386de6deaabdf6567396eff8b85b4d123f3fba96e1f55053176839ac"
+      ],
+      [
+        "load2disp",
+        "lib/load2disp.m",
+        "fd880a332eed492718733f04147214018942c4d04b72f1e6bdc64be1d81b8bf2"
+      ],
+      [
+        "isload",
+        "lib/isload.m",
+        "bb87fecdfc972bfe494c273c9fbc80819ba45345b7ba92b5ea6138218991cc12"
+      ],
+      [
+        "idx_bus",
+        "lib/idx_bus.m",
+        "fe60f4150a50a7311d26d23edfc00ed49ab7442e4be78c520f4e1cf91019e6eb"
+      ],
+      [
+        "idx_gen",
+        "lib/idx_gen.m",
+        "5f070fa5321e3a0ec2b0f01df60f3ec1e13d49676115e5b1e278f6766311cdd1"
+      ],
+      [
+        "idx_brch",
+        "lib/idx_brch.m",
+        "85b93d705427624d17ed43595c052ce89a6a0976735631ec7c3621d3caf2b4c2"
+      ],
+      [
+        "idx_cost",
+        "lib/idx_cost.m",
+        "d1a12d33631a11d3f246dc0502dc333ce77764b35bfb7ff83753c8afc2efdc5d"
+      ],
+      [
+        "define_constants",
+        "lib/define_constants.m",
+        "ce59aec51a83ed6f118456b5fa5146fce8247f71174868c379f048abc5a15aeb"
+      ],
+      [
+        "makeYbus",
+        "lib/makeYbus.m",
+        "618717d4ab738fec24d6b6624ba4b56c7953cb2205af2197db5199317611c10e"
+      ],
+      [
+        "makeSbus",
+        "lib/makeSbus.m",
+        "52a0a983355c3875fdc5e7a9164756d3d3f75271d09ef66eacc41924083b0e07"
+      ],
+      [
+        "dSbus_dV",
+        "lib/dSbus_dV.m",
+        "bd86d31bbb66d51d32d1dc087d35192416db00c51492d0c011bcb9939285be6c"
+      ],
+      [
+        "pfsoln",
+        "lib/pfsoln.m",
+        "01bd2214f72beb3a2b32f1e55d8226ed298a89dbdadace5218590727dadc48b2"
+      ],
+      [
+        "bustypes",
+        "lib/bustypes.m",
+        "c18fb5a579c6931c77e7abaf2c595e71ae17bf1e22bc40f8fe792e7d7cc1e72c"
+      ],
+      [
+        "mplinsolve",
+        "mips/lib/mplinsolve.m",
+        "b1285ed46ab092012ca85b85bcc96725d3f8dd7370d21e8c14dc81739d5b48fd"
+      ],
+      [
+        "opf",
+        "lib/opf.m",
+        "e4115202d65619b986d4471763e4421cb8f7c95436f14bd17a885e80c7e5977f"
+      ],
+      [
+        "opf_setup",
+        "lib/opf_setup.m",
+        "96ab979f6836460fc066fda48ebf77d4bdc449ca2c33796b4dfa72c08968b1f8"
+      ],
+      [
+        "opf_execute",
+        "lib/opf_execute.m",
+        "07f24b1357b68f7ed14bcc2a8b95e2218ea175f22fae804c176ffcdc7d64e352"
+      ],
+      [
+        "mpoption_info_mips",
+        "lib/mpoption_info_mips.m",
+        "75d997da9142ce593f9900a74d25b4c7d4e7b0792e907f08e79402e1ec658fe3"
+      ]
+    ],
+    "source_sha256": "2a437aa29204dfd4a9757d6ecd6d9f81f6b39a7a080f8bcc2d07e89d938c9242",
+    "settings": {
+      "verbose": 0,
+      "mpopt": {
+        "v": 25,
+        "model": "AC",
+        "pf": {
+          "alg": "NR",
+          "current_balance": 0,
+          "v_cartesian": 0,
+          "tol": 1e-08,
+          "nr": {
+            "max_it": 10,
+            "lin_solver": ""
+          },
+          "fd": {
+            "max_it": 30
+          },
+          "gs": {
+            "max_it": 1000
+          },
+          "zg": {
+            "max_it": 1000
+          },
+          "radial": {
+            "max_it": 20,
+            "vcorr": 0
+          },
+          "enforce_q_lims": 0
+        },
+        "cpf": {
+          "parameterization": 3,
+          "stop_at": "NOSE",
+          "enforce_p_lims": 0,
+          "enforce_q_lims": 0,
+          "enforce_v_lims": 0,
+          "enforce_flow_lims": 0,
+          "step": 0.05,
+          "step_min": 0.0001,
+          "step_max": 0.2,
+          "adapt_step": 0,
+          "adapt_step_damping": 0.7,
+          "adapt_step_tol": 0.001,
+          "target_lam_tol": 1e-05,
+          "nose_tol": 1e-05,
+          "p_lims_tol": 0.01,
+          "q_lims_tol": 0.01,
+          "v_lims_tol": 0.0001,
+          "flow_lims_tol": 0.01,
+          "plot": {
+            "level": 0,
+            "bus": []
+          },
+          "user_callback": ""
+        },
+        "opf": {
+          "ac": {
+            "solver": "MIPS"
+          },
+          "dc": {
+            "solver": "DEFAULT"
+          },
+          "current_balance": 0,
+          "v_cartesian": 0,
+          "violation": 5e-06,
+          "use_vg": 0,
+          "flow_lim": "S",
+          "ignore_angle_lim": 0,
+          "softlims": {
+            "default": 1
+          },
+          "start": 0,
+          "return_raw_der": 0
+        },
+        "verbose": 0,
+        "out": {
+          "all": 0,
+          "sys_sum": 1,
+          "area_sum": 0,
+          "bus": 1,
+          "branch": 1,
+          "gen": 0,
+          "lim": {
+            "all": -1,
+            "v": 1,
+            "line": 1,
+            "pg": 1,
+            "qg": 1
+          },
+          "force": 0,
+          "suppress_detail": -1
+        },
+        "mips": {
+          "step_control": 0,
+          "linsolver": "",
+          "feastol": 0,
+          "gradtol": 1e-06,
+          "comptol": 1e-06,
+          "costtol": 1e-06,
+          "max_it": 150,
+          "sc": {
+            "red_it": 20
+          }
+        },
+        "exp": {
+          "use_legacy_core": 1,
+          "sys_wide_zip_loads": {
+            "pw": [],
+            "qw": []
+          }
+        },
+        "fmincon": {
+          "alg": 4,
+          "tol_x": 0.0001,
+          "tol_f": 0.0001,
+          "max_it": 0
+        },
+        "intlinprog": [],
+        "linprog": [],
+        "most": {
+          "build_model": 1,
+          "solve_model": 1,
+          "resolve_new_cost": 0,
+          "dc_model": 1,
+          "fixed_res": -1,
+          "q_coordination": 0,
+          "security_constraints": -1,
+          "storage": {
+            "terminal_target": -1,
+            "cyclic": 0
+          },
+          "uc": {
+            "run": -1,
+            "cyclic": 0
+          },
+          "alpha": 0,
+          "solver": "DEFAULT",
+          "skip_prices": 0,
+          "price_stage_warn_tol": 1e-07
+        },
+        "quadprog": []
+      },
+      "max_recursion_depth": 100,
+      "uvls_per_step": 0.05,
+      "uvls_max_steps": 5,
+      "dP_limit": 0.15,
+      "P_overhead": 0.1,
+      "Q_tolerance": 0.1,
+      "grid_forming": [],
+      "keep_networks_after_cascade": 0
+    },
+    "operating_point_audit": {
+      "alpha": 0.95,
+      "load_mw": 4029.8999999999996,
+      "p_reserve_mw": 2367.213006325164,
+      "max_end_loading": 0.9999999791619704,
+      "max_ac_cfm_loading": 0.9899858178647581,
+      "max_mismatch_pu": 1.1808920391176804e-13,
+      "n0_loss_fraction": 0,
+      "n0_graph_edges": 1
+    }
+  },
+  {
+    "experiment": "group-3",
+    "group": 3,
+    "sampling_seed": 20261129,
+    "planned": 250,
+    "load_scale": 1.05,
+    "record_states": false,
+    "operating_point": "opf",
+    "plan_sha256": "97c8cef2aeeb87c1c4bf7b7b244b686ea97dcb08ce6af43dbb26ee97ac212cde",
+    "case_sha256": "b1af0833849040c04babc3700631cff0d9afa66b79c5d3e13ae79bdf516cec78",
+    "matlab": "25.1.0.2943329 (R2025a)",
+    "matpower": "8.1",
+    "solver": "MIPS",
+    "pf_core": "legacy",
+    "observer_generator_version": "2.1",
+    "solver_inventory": [
+      [
+        "runpf",
+        "lib/runpf.m",
+        "467ffd918e106ca75b690fb50adc77ac4544f898753359485a65518f3db4a66a"
+      ],
+      [
+        "runopf",
+        "lib/runopf.m",
+        "625f0bca3c2d3b6d14d1e7e09c16b9340cdedff301034e8bfb1b2b9f2bc2a872"
+      ],
+      [
+        "mpoption",
+        "lib/mpoption.m",
+        "fdf5a48b695f69d371258d8c5ab5bf824b28920f909356fbbb5c6b7773f8a106"
+      ],
+      [
+        "mips",
+        "mips/lib/mips.m",
+        "cbf2ad3de9736b3843c278d044879f9919fc313f06286c73831359324db2b33d"
+      ],
+      [
+        "nlpopf_solver",
+        "lib/nlpopf_solver.m",
+        "37a13364b21c89491bab8c6571c3d45fa244f31d73924114405002fb2a80e0cc"
+      ],
+      [
+        "newtonpf",
+        "lib/newtonpf.m",
+        "347220f6d83b4de31bc622c3a3cdc09ccccca52bfa770a81d9703aa28c860edc"
+      ],
+      [
+        "ext2int",
+        "lib/ext2int.m",
+        "a43954979f94b42cde6b1b3bcfa565558012d91627426bb7279bf62156e4f3d0"
+      ],
+      [
+        "int2ext",
+        "lib/int2ext.m",
+        "82cbdcd17acc90cff40a6e527b85825744354f47e10f54948323148b39994d25"
+      ],
+      [
+        "e2i_field",
+        "lib/e2i_field.m",
+        "e799675f21469c9b61601f7e4d5c4e08d3a4de7d7f8bf60db4087c7ce5c59e03"
+      ],
+      [
+        "i2e_field",
+        "lib/i2e_field.m",
+        "b8e4e99d1db9b75372d8c97ad83ab9f38569800cf01122ed47116c5852cf1857"
+      ],
+      [
+        "find_islands",
+        "lib/find_islands.m",
+        "a00eaa51ae28b0f19c359b3933e5dbdaedc192d7bd4de6cb148b77fd4a2a2022"
+      ],
+      [
+        "extract_islands",
+        "lib/extract_islands.m",
+        "63511443386de6deaabdf6567396eff8b85b4d123f3fba96e1f55053176839ac"
+      ],
+      [
+        "load2disp",
+        "lib/load2disp.m",
+        "fd880a332eed492718733f04147214018942c4d04b72f1e6bdc64be1d81b8bf2"
+      ],
+      [
+        "isload",
+        "lib/isload.m",
+        "bb87fecdfc972bfe494c273c9fbc80819ba45345b7ba92b5ea6138218991cc12"
+      ],
+      [
+        "idx_bus",
+        "lib/idx_bus.m",
+        "fe60f4150a50a7311d26d23edfc00ed49ab7442e4be78c520f4e1cf91019e6eb"
+      ],
+      [
+        "idx_gen",
+        "lib/idx_gen.m",
+        "5f070fa5321e3a0ec2b0f01df60f3ec1e13d49676115e5b1e278f6766311cdd1"
+      ],
+      [
+        "idx_brch",
+        "lib/idx_brch.m",
+        "85b93d705427624d17ed43595c052ce89a6a0976735631ec7c3621d3caf2b4c2"
+      ],
+      [
+        "idx_cost",
+        "lib/idx_cost.m",
+        "d1a12d33631a11d3f246dc0502dc333ce77764b35bfb7ff83753c8afc2efdc5d"
+      ],
+      [
+        "define_constants",
+        "lib/define_constants.m",
+        "ce59aec51a83ed6f118456b5fa5146fce8247f71174868c379f048abc5a15aeb"
+      ],
+      [
+        "makeYbus",
+        "lib/makeYbus.m",
+        "618717d4ab738fec24d6b6624ba4b56c7953cb2205af2197db5199317611c10e"
+      ],
+      [
+        "makeSbus",
+        "lib/makeSbus.m",
+        "52a0a983355c3875fdc5e7a9164756d3d3f75271d09ef66eacc41924083b0e07"
+      ],
+      [
+        "dSbus_dV",
+        "lib/dSbus_dV.m",
+        "bd86d31bbb66d51d32d1dc087d35192416db00c51492d0c011bcb9939285be6c"
+      ],
+      [
+        "pfsoln",
+        "lib/pfsoln.m",
+        "01bd2214f72beb3a2b32f1e55d8226ed298a89dbdadace5218590727dadc48b2"
+      ],
+      [
+        "bustypes",
+        "lib/bustypes.m",
+        "c18fb5a579c6931c77e7abaf2c595e71ae17bf1e22bc40f8fe792e7d7cc1e72c"
+      ],
+      [
+        "mplinsolve",
+        "mips/lib/mplinsolve.m",
+        "b1285ed46ab092012ca85b85bcc96725d3f8dd7370d21e8c14dc81739d5b48fd"
+      ],
+      [
+        "opf",
+        "lib/opf.m",
+        "e4115202d65619b986d4471763e4421cb8f7c95436f14bd17a885e80c7e5977f"
+      ],
+      [
+        "opf_setup",
+        "lib/opf_setup.m",
+        "96ab979f6836460fc066fda48ebf77d4bdc449ca2c33796b4dfa72c08968b1f8"
+      ],
+      [
+        "opf_execute",
+        "lib/opf_execute.m",
+        "07f24b1357b68f7ed14bcc2a8b95e2218ea175f22fae804c176ffcdc7d64e352"
+      ],
+      [
+        "mpoption_info_mips",
+        "lib/mpoption_info_mips.m",
+        "75d997da9142ce593f9900a74d25b4c7d4e7b0792e907f08e79402e1ec658fe3"
+      ]
+    ],
+    "source_sha256": "2a437aa29204dfd4a9757d6ecd6d9f81f6b39a7a080f8bcc2d07e89d938c9242",
+    "settings": {
+      "verbose": 0,
+      "mpopt": {
+        "v": 25,
+        "model": "AC",
+        "pf": {
+          "alg": "NR",
+          "current_balance": 0,
+          "v_cartesian": 0,
+          "tol": 1e-08,
+          "nr": {
+            "max_it": 10,
+            "lin_solver": ""
+          },
+          "fd": {
+            "max_it": 30
+          },
+          "gs": {
+            "max_it": 1000
+          },
+          "zg": {
+            "max_it": 1000
+          },
+          "radial": {
+            "max_it": 20,
+            "vcorr": 0
+          },
+          "enforce_q_lims": 0
+        },
+        "cpf": {
+          "parameterization": 3,
+          "stop_at": "NOSE",
+          "enforce_p_lims": 0,
+          "enforce_q_lims": 0,
+          "enforce_v_lims": 0,
+          "enforce_flow_lims": 0,
+          "step": 0.05,
+          "step_min": 0.0001,
+          "step_max": 0.2,
+          "adapt_step": 0,
+          "adapt_step_damping": 0.7,
+          "adapt_step_tol": 0.001,
+          "target_lam_tol": 1e-05,
+          "nose_tol": 1e-05,
+          "p_lims_tol": 0.01,
+          "q_lims_tol": 0.01,
+          "v_lims_tol": 0.0001,
+          "flow_lims_tol": 0.01,
+          "plot": {
+            "level": 0,
+            "bus": []
+          },
+          "user_callback": ""
+        },
+        "opf": {
+          "ac": {
+            "solver": "MIPS"
+          },
+          "dc": {
+            "solver": "DEFAULT"
+          },
+          "current_balance": 0,
+          "v_cartesian": 0,
+          "violation": 5e-06,
+          "use_vg": 0,
+          "flow_lim": "S",
+          "ignore_angle_lim": 0,
+          "softlims": {
+            "default": 1
+          },
+          "start": 0,
+          "return_raw_der": 0
+        },
+        "verbose": 0,
+        "out": {
+          "all": 0,
+          "sys_sum": 1,
+          "area_sum": 0,
+          "bus": 1,
+          "branch": 1,
+          "gen": 0,
+          "lim": {
+            "all": -1,
+            "v": 1,
+            "line": 1,
+            "pg": 1,
+            "qg": 1
+          },
+          "force": 0,
+          "suppress_detail": -1
+        },
+        "mips": {
+          "step_control": 0,
+          "linsolver": "",
+          "feastol": 0,
+          "gradtol": 1e-06,
+          "comptol": 1e-06,
+          "costtol": 1e-06,
+          "max_it": 150,
+          "sc": {
+            "red_it": 20
+          }
+        },
+        "exp": {
+          "use_legacy_core": 1,
+          "sys_wide_zip_loads": {
+            "pw": [],
+            "qw": []
+          }
+        },
+        "fmincon": {
+          "alg": 4,
+          "tol_x": 0.0001,
+          "tol_f": 0.0001,
+          "max_it": 0
+        },
+        "intlinprog": [],
+        "linprog": [],
+        "most": {
+          "build_model": 1,
+          "solve_model": 1,
+          "resolve_new_cost": 0,
+          "dc_model": 1,
+          "fixed_res": -1,
+          "q_coordination": 0,
+          "security_constraints": -1,
+          "storage": {
+            "terminal_target": -1,
+            "cyclic": 0
+          },
+          "uc": {
+            "run": -1,
+            "cyclic": 0
+          },
+          "alpha": 0,
+          "solver": "DEFAULT",
+          "skip_prices": 0,
+          "price_stage_warn_tol": 1e-07
+        },
+        "quadprog": []
+      },
+      "max_recursion_depth": 100,
+      "uvls_per_step": 0.05,
+      "uvls_max_steps": 5,
+      "dP_limit": 0.15,
+      "P_overhead": 0.1,
+      "Q_tolerance": 0.1,
+      "grid_forming": [],
+      "keep_networks_after_cascade": 0
+    },
+    "operating_point_audit": {
+      "alpha": 1.05,
+      "load_mw": 4454.1,
+      "p_reserve_mw": 1903.8319484176159,
+      "max_end_loading": 1.0000000318304054,
+      "max_ac_cfm_loading": 0.9903328644045352,
+      "max_mismatch_pu": 1.788584806210621e-13,
+      "n0_loss_fraction": 0,
+      "n0_graph_edges": 1
+    }
+  },
+  {
+    "experiment": "group-4",
+    "group": 4,
+    "sampling_seed": 20261130,
+    "planned": 250,
+    "load_scale": 1.025,
+    "record_states": true,
+    "operating_point": "opf",
+    "plan_sha256": "ca8acd644c52c461767053c5dee95f46d2919bcc98c16d18c66a2fe764c5c830",
+    "case_sha256": "b1af0833849040c04babc3700631cff0d9afa66b79c5d3e13ae79bdf516cec78",
+    "matlab": "25.1.0.2943329 (R2025a)",
+    "matpower": "8.1",
+    "solver": "MIPS",
+    "pf_core": "legacy",
+    "observer_generator_version": "2.1",
+    "solver_inventory": [
+      [
+        "runpf",
+        "lib/runpf.m",
+        "467ffd918e106ca75b690fb50adc77ac4544f898753359485a65518f3db4a66a"
+      ],
+      [
+        "runopf",
+        "lib/runopf.m",
+        "625f0bca3c2d3b6d14d1e7e09c16b9340cdedff301034e8bfb1b2b9f2bc2a872"
+      ],
+      [
+        "mpoption",
+        "lib/mpoption.m",
+        "fdf5a48b695f69d371258d8c5ab5bf824b28920f909356fbbb5c6b7773f8a106"
+      ],
+      [
+        "mips",
+        "mips/lib/mips.m",
+        "cbf2ad3de9736b3843c278d044879f9919fc313f06286c73831359324db2b33d"
+      ],
+      [
+        "nlpopf_solver",
+        "lib/nlpopf_solver.m",
+        "37a13364b21c89491bab8c6571c3d45fa244f31d73924114405002fb2a80e0cc"
+      ],
+      [
+        "newtonpf",
+        "lib/newtonpf.m",
+        "347220f6d83b4de31bc622c3a3cdc09ccccca52bfa770a81d9703aa28c860edc"
+      ],
+      [
+        "ext2int",
+        "lib/ext2int.m",
+        "a43954979f94b42cde6b1b3bcfa565558012d91627426bb7279bf62156e4f3d0"
+      ],
+      [
+        "int2ext",
+        "lib/int2ext.m",
+        "82cbdcd17acc90cff40a6e527b85825744354f47e10f54948323148b39994d25"
+      ],
+      [
+        "e2i_field",
+        "lib/e2i_field.m",
+        "e799675f21469c9b61601f7e4d5c4e08d3a4de7d7f8bf60db4087c7ce5c59e03"
+      ],
+      [
+        "i2e_field",
+        "lib/i2e_field.m",
+        "b8e4e99d1db9b75372d8c97ad83ab9f38569800cf01122ed47116c5852cf1857"
+      ],
+      [
+        "find_islands",
+        "lib/find_islands.m",
+        "a00eaa51ae28b0f19c359b3933e5dbdaedc192d7bd4de6cb148b77fd4a2a2022"
+      ],
+      [
+        "extract_islands",
+        "lib/extract_islands.m",
+        "63511443386de6deaabdf6567396eff8b85b4d123f3fba96e1f55053176839ac"
+      ],
+      [
+        "load2disp",
+        "lib/load2disp.m",
+        "fd880a332eed492718733f04147214018942c4d04b72f1e6bdc64be1d81b8bf2"
+      ],
+      [
+        "isload",
+        "lib/isload.m",
+        "bb87fecdfc972bfe494c273c9fbc80819ba45345b7ba92b5ea6138218991cc12"
+      ],
+      [
+        "idx_bus",
+        "lib/idx_bus.m",
+        "fe60f4150a50a7311d26d23edfc00ed49ab7442e4be78c520f4e1cf91019e6eb"
+      ],
+      [
+        "idx_gen",
+        "lib/idx_gen.m",
+        "5f070fa5321e3a0ec2b0f01df60f3ec1e13d49676115e5b1e278f6766311cdd1"
+      ],
+      [
+        "idx_brch",
+        "lib/idx_brch.m",
+        "85b93d705427624d17ed43595c052ce89a6a0976735631ec7c3621d3caf2b4c2"
+      ],
+      [
+        "idx_cost",
+        "lib/idx_cost.m",
+        "d1a12d33631a11d3f246dc0502dc333ce77764b35bfb7ff83753c8afc2efdc5d"
+      ],
+      [
+        "define_constants",
+        "lib/define_constants.m",
+        "ce59aec51a83ed6f118456b5fa5146fce8247f71174868c379f048abc5a15aeb"
+      ],
+      [
+        "makeYbus",
+        "lib/makeYbus.m",
+        "618717d4ab738fec24d6b6624ba4b56c7953cb2205af2197db5199317611c10e"
+      ],
+      [
+        "makeSbus",
+        "lib/makeSbus.m",
+        "52a0a983355c3875fdc5e7a9164756d3d3f75271d09ef66eacc41924083b0e07"
+      ],
+      [
+        "dSbus_dV",
+        "lib/dSbus_dV.m",
+        "bd86d31bbb66d51d32d1dc087d35192416db00c51492d0c011bcb9939285be6c"
+      ],
+      [
+        "pfsoln",
+        "lib/pfsoln.m",
+        "01bd2214f72beb3a2b32f1e55d8226ed298a89dbdadace5218590727dadc48b2"
+      ],
+      [
+        "bustypes",
+        "lib/bustypes.m",
+        "c18fb5a579c6931c77e7abaf2c595e71ae17bf1e22bc40f8fe792e7d7cc1e72c"
+      ],
+      [
+        "mplinsolve",
+        "mips/lib/mplinsolve.m",
+        "b1285ed46ab092012ca85b85bcc96725d3f8dd7370d21e8c14dc81739d5b48fd"
+      ],
+      [
+        "opf",
+        "lib/opf.m",
+        "e4115202d65619b986d4471763e4421cb8f7c95436f14bd17a885e80c7e5977f"
+      ],
+      [
+        "opf_setup",
+        "lib/opf_setup.m",
+        "96ab979f6836460fc066fda48ebf77d4bdc449ca2c33796b4dfa72c08968b1f8"
+      ],
+      [
+        "opf_execute",
+        "lib/opf_execute.m",
+        "07f24b1357b68f7ed14bcc2a8b95e2218ea175f22fae804c176ffcdc7d64e352"
+      ],
+      [
+        "mpoption_info_mips",
+        "lib/mpoption_info_mips.m",
+        "75d997da9142ce593f9900a74d25b4c7d4e7b0792e907f08e79402e1ec658fe3"
+      ]
+    ],
+    "source_sha256": "2a437aa29204dfd4a9757d6ecd6d9f81f6b39a7a080f8bcc2d07e89d938c9242",
+    "settings": {
+      "verbose": 0,
+      "mpopt": {
+        "v": 25,
+        "model": "AC",
+        "pf": {
+          "alg": "NR",
+          "current_balance": 0,
+          "v_cartesian": 0,
+          "tol": 1e-08,
+          "nr": {
+            "max_it": 10,
+            "lin_solver": ""
+          },
+          "fd": {
+            "max_it": 30
+          },
+          "gs": {
+            "max_it": 1000
+          },
+          "zg": {
+            "max_it": 1000
+          },
+          "radial": {
+            "max_it": 20,
+            "vcorr": 0
+          },
+          "enforce_q_lims": 0
+        },
+        "cpf": {
+          "parameterization": 3,
+          "stop_at": "NOSE",
+          "enforce_p_lims": 0,
+          "enforce_q_lims": 0,
+          "enforce_v_lims": 0,
+          "enforce_flow_lims": 0,
+          "step": 0.05,
+          "step_min": 0.0001,
+          "step_max": 0.2,
+          "adapt_step": 0,
+          "adapt_step_damping": 0.7,
+          "adapt_step_tol": 0.001,
+          "target_lam_tol": 1e-05,
+          "nose_tol": 1e-05,
+          "p_lims_tol": 0.01,
+          "q_lims_tol": 0.01,
+          "v_lims_tol": 0.0001,
+          "flow_lims_tol": 0.01,
+          "plot": {
+            "level": 0,
+            "bus": []
+          },
+          "user_callback": ""
+        },
+        "opf": {
+          "ac": {
+            "solver": "MIPS"
+          },
+          "dc": {
+            "solver": "DEFAULT"
+          },
+          "current_balance": 0,
+          "v_cartesian": 0,
+          "violation": 5e-06,
+          "use_vg": 0,
+          "flow_lim": "S",
+          "ignore_angle_lim": 0,
+          "softlims": {
+            "default": 1
+          },
+          "start": 0,
+          "return_raw_der": 0
+        },
+        "verbose": 0,
+        "out": {
+          "all": 0,
+          "sys_sum": 1,
+          "area_sum": 0,
+          "bus": 1,
+          "branch": 1,
+          "gen": 0,
+          "lim": {
+            "all": -1,
+            "v": 1,
+            "line": 1,
+            "pg": 1,
+            "qg": 1
+          },
+          "force": 0,
+          "suppress_detail": -1
+        },
+        "mips": {
+          "step_control": 0,
+          "linsolver": "",
+          "feastol": 0,
+          "gradtol": 1e-06,
+          "comptol": 1e-06,
+          "costtol": 1e-06,
+          "max_it": 150,
+          "sc": {
+            "red_it": 20
+          }
+        },
+        "exp": {
+          "use_legacy_core": 1,
+          "sys_wide_zip_loads": {
+            "pw": [],
+            "qw": []
+          }
+        },
+        "fmincon": {
+          "alg": 4,
+          "tol_x": 0.0001,
+          "tol_f": 0.0001,
+          "max_it": 0
+        },
+        "intlinprog": [],
+        "linprog": [],
+        "most": {
+          "build_model": 1,
+          "solve_model": 1,
+          "resolve_new_cost": 0,
+          "dc_model": 1,
+          "fixed_res": -1,
+          "q_coordination": 0,
+          "security_constraints": -1,
+          "storage": {
+            "terminal_target": -1,
+            "cyclic": 0
+          },
+          "uc": {
+            "run": -1,
+            "cyclic": 0
+          },
+          "alpha": 0,
+          "solver": "DEFAULT",
+          "skip_prices": 0,
+          "price_stage_warn_tol": 1e-07
+        },
+        "quadprog": []
+      },
+      "max_recursion_depth": 100,
+      "uvls_per_step": 0.05,
+      "uvls_max_steps": 5,
+      "dP_limit": 0.15,
+      "P_overhead": 0.1,
+      "Q_tolerance": 0.1,
+      "grid_forming": [],
+      "keep_networks_after_cascade": 0
+    },
+    "operating_point_audit": {
+      "alpha": 1.025,
+      "load_mw": 4348.049999999999,
+      "p_reserve_mw": 2018.3662897576537,
+      "max_end_loading": 1.0000000228019434,
+      "max_ac_cfm_loading": 0.9902446105253933,
+      "max_mismatch_pu": 1.196762634253247e-13,
+      "n0_loss_fraction": 0,
+      "n0_graph_edges": 1
+    }
+  }
+]

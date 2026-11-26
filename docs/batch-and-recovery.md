@@ -22,3 +22,5 @@ python python/read_run.py --require-plan runs/example-batch/scenario_000003
 ```
 
 原子改名及进程退出已在本地 NTFS 验证。物理掉电、实际磁盘用完、网络文件系统和进程卡死自动终止仍待验证。
+
+关键依赖清单记录实际解析到的 MATPOWER 相对路径和 SHA-256，涵盖 PF/OPF、岛提取、内外索引、负荷转换和电气方程。它可检测被跟踪函数的改动及路径遮蔽。相同计划还比较平台源码及算例摘要。MATLAB 内核、未列出的 MATPOWER 传递依赖、BLAS 和自定义函数需要依靠相同部署与固定回归重现。

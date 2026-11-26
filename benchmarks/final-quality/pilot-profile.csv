@@ -1,0 +1,3 @@
+measurement,FunctionName,NumCalls,TotalTime
+group-1-pilot-pilot-profile,batch>write_table,24,0.469496805198136
+group-1-pilot-traced-pilot-traced-profile,batch>write_table,24,0.559605607762537
